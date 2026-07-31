@@ -1,4 +1,4 @@
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 body {
   margin: 0;
@@ -8,31 +8,94 @@ body {
   overflow: hidden;
 }
 
+#help {
+  box-sizing: border-box;
+  height: 100vh;
+  padding: 12px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  align-content: start;
+}
+
+#help h1,
+#help p,
+#help ul {
+  margin: 0;
+}
+
+#help h1 {
+  grid-column: 1 / -1;
+  font-family: "Pokemon", sans-serif;
+  color: #ffcb05;
+  text-shadow: 2px 2px 0px black;
+  font-size: clamp(20px, 2.2vw, 34px);
+  line-height: 1.05;
+}
+
+#help > p {
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+#help ul {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+#help li {
+  margin: 0;
+}
+
+#help code {
+  display: block;
+  grid-column: 1 / -1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 11px;
+  line-height: 1.25;
+  word-break: break-all;
+}
+
 /* Layout */
 #game {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px;
-  gap: 12px;
-  padding: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 210px);
+  grid-template-rows: auto 1fr auto;
+  gap: 8px 12px;
+  padding: 10px;
   box-sizing: border-box;
   height: 100vh;
+  width: 100vw;
+  overflow: hidden;
   align-items: start;
 }
 
 #status {
   grid-column: 1 / -1;
   font-family: "Pokemon", sans-serif;
-  font-size: clamp(20px, 2vw, 28px);
+  font-size: clamp(18px, 1.8vw, 26px);
   color: #ffcb05;
   text-shadow: 3px 3px 0px black;
   letter-spacing: 1px;
+  line-height: 1;
 }
 
 #clues {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-auto-rows: min-content;
+  gap: 8px;
   align-content: start;
+  grid-column: 1;
+  min-width: 0;
 }
 
 #debug-log {
@@ -172,17 +235,18 @@ body {
   background: linear-gradient(180deg, #2a75bb, #3c5aa6);
   border: 4px solid #ffcb05;
   border-radius: 12px;
-  padding: 10px;
+  padding: 8px 10px;
   animation: slideIn 0.5s ease-out;
   font-family: "Pokemon", sans-serif;
   color: white;
   text-shadow: 2px 2px 0px black;
-  font-size: 16px;
+  font-size: 13px;
+  min-width: 0;
 }
 
 .clue-section h2 {
-  font-size: 24px;
-  margin: 0 0 4px;
+  font-size: 18px;
+  margin: 0 0 3px;
   color: #ffcb05;
   text-shadow: 2px 2px 0px black;
 }
@@ -190,8 +254,8 @@ body {
 .clue-section span,
 .clue-content {
   font-family: sans-serif;
-  font-size: 18px;
-  line-height: 1.2;
+  font-size: 13px;
+  line-height: 1.12;
   letter-spacing: 0;
   text-shadow: none;
 }
@@ -199,13 +263,13 @@ body {
 .clue-content span,
 .clue-content div,
 .clue-content p {
-  font-size: 18px;
+  font-size: 13px;
 }
 
 /* Color bar */
 .color-swatches {
   display: flex;
-  height: 20px;
+  height: 14px;
   border-radius: 4px;
   overflow: hidden;
   margin-top: 4px;
@@ -217,7 +281,7 @@ body {
 
 /* Stats bars */
 .stat-bar {
-  height: 14px;
+  height: 10px;
   background: #1a1a1a;
   border-radius: 6px;
   overflow: hidden;
@@ -238,13 +302,13 @@ body {
   align-items: center;
   margin-top: 0;
   grid-column: 2;
-  grid-row: 2 / span 2;
+  grid-row: 2;
   align-self: center;
 }
 
 #poke-gif {
-  width: 180px;
-  height: 180px;
+  width: min(180px, 20vw);
+  height: min(180px, 20vw);
   image-rendering: pixelated;
 }
 
@@ -259,13 +323,17 @@ body {
   top: 12px;
   right: 12px;
   font-family: "Pokemon", sans-serif;
-  font-size: clamp(32px, 3vw, 48px);
+  font-size: clamp(28px, 2.5vw, 42px);
   color: #ffcb05;
   text-shadow: 3px 3px 0px black;
   z-index: 9999;
 }
 
 @media (max-width: 1100px) {
+  #help ul {
+    grid-template-columns: 1fr;
+  }
+
   #game {
     grid-template-columns: 1fr 180px;
   }
