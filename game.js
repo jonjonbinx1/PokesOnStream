@@ -135,6 +135,11 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
     outcome.innerHTML = "";
     outcome.classList.remove("hidden");
 
+    const brand = document.createElement("div");
+    brand.className = "outcome-brand";
+    brand.textContent = "PokesOnStream";
+    outcome.appendChild(brand);
+
     const title = document.createElement("div");
     title.className = "outcome-title";
 
@@ -202,6 +207,95 @@ function debugLog(...args) {
     }
 }
 
+function buildOverlayUrlFromForm() {
+    const channel = document.getElementById("generator-channel")?.value.trim() || "";
+    const clues = document.getElementById("generator-clues")?.value.trim() || "6";
+    const totalTime = document.getElementById("generator-totaltime")?.value.trim() || "45";
+    const interval = document.getElementById("generator-interval")?.value.trim() || "5";
+    const reveal = document.getElementById("generator-reveal")?.value.trim() || "";
+    const sync = document.getElementById("generator-sync")?.value.trim() || "0";
+    const autoStart = document.getElementById("generator-autostart")?.value.trim() || "0";
+    const mods = document.getElementById("generator-mods")?.value.trim() || "";
+    const debug = document.getElementById("generator-debug")?.checked;
+
+    const url = new URL("https://jonjonbinx1.github.io/PokesOnStream/");
+
+    if (channel) url.searchParams.set("channel", channel);
+    url.searchParams.set("clues", clues);
+    url.searchParams.set("totaltime", totalTime);
+    url.searchParams.set("interval", interval);
+    url.searchParams.set("sync", sync);
+    url.searchParams.set("autostart", autoStart);
+
+    if (reveal !== "") {
+        url.searchParams.set("reveal", reveal);
+    }
+
+    if (mods) {
+        url.searchParams.set("mods", mods);
+    }
+
+    if (debug) {
+        url.searchParams.set("debug", "true");
+    }
+
+    return { url, channel };
+}
+
+function updateGeneratedUrl() {
+    const output = document.getElementById("generated-url");
+    const openLink = document.getElementById("open-generated-url");
+    const status = document.getElementById("generator-status");
+
+    if (!output || !openLink || !status) return;
+
+    const { url, channel } = buildOverlayUrlFromForm();
+    const generatedUrl = url.toString();
+
+    output.value = generatedUrl;
+    openLink.href = generatedUrl;
+
+    status.textContent = channel
+        ? "URL ready to copy into OBS or a browser source."
+        : "Add a channel name to create a usable overlay URL.";
+}
+
+async function copyGeneratedUrl() {
+    const output = document.getElementById("generated-url");
+    const status = document.getElementById("generator-status");
+
+    if (!output || !status) return;
+
+    try {
+        await navigator.clipboard.writeText(output.value);
+        status.textContent = "Generated URL copied.";
+    } catch {
+        output.focus();
+        output.select();
+        status.textContent = "Copy failed. The URL is selected so you can copy it manually.";
+    }
+}
+
+function setupHelpPageGenerator() {
+    const help = document.getElementById("help");
+    if (!help) return;
+
+    const baseLabel = document.getElementById("generator-base-url");
+    if (baseLabel) {
+        baseLabel.textContent = "https://jonjonbinx1.github.io/PokesOnStream/";
+    }
+
+    const fields = help.querySelectorAll("input");
+    fields.forEach(field => {
+        const eventName = field.type === "checkbox" ? "change" : "input";
+        field.addEventListener(eventName, updateGeneratedUrl);
+    });
+
+    document.getElementById("copy-generated-url")?.addEventListener("click", copyGeneratedUrl);
+
+    updateGeneratedUrl();
+}
+
 window.pokeDebugEnabled = false;
 window.pokeDebugLog = debugLog;
 
@@ -236,6 +330,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const params = getParams();
     gameState.params = params;
     window.pokeDebugEnabled = params.debug;
+
+    setupHelpPageGenerator();
 
     const debugPanel = document.getElementById("debug-log");
     if (debugPanel) {

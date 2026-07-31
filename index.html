@@ -2,15 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Pokémon Guessing Game</title>
+  <title>PokesOnStream</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/node-vibrant/3.1.6/vibrant.min.js"></script>
 </head>
 
 <body>
   <div id="help" class="hidden">
-    <h1>Pokémon Guessing Browser Source</h1>
+    <h1>PokesOnStream</h1>
     <p class="help-intro">Open this source with URL parameters to connect it to chat and tune how each round behaves.</p>
+
+    <section class="help-section">
+      <h2>URL generator</h2>
+      <div class="url-generator">
+        <p class="generator-note">Base URL: <code id="generator-base-url">https://jonjonbinx1.github.io/PokesOnStream/</code></p>
+        <div class="generator-grid">
+          <label class="generator-field">
+            <span>Channel <strong>*</strong></span>
+            <input id="generator-channel" name="channel" type="text" placeholder="yourtwitchchannel" autocomplete="off" />
+          </label>
+
+          <label class="generator-field">
+            <span>Clues</span>
+            <input id="generator-clues" name="clues" type="number" min="1" value="6" />
+          </label>
+
+          <label class="generator-field">
+            <span>Total time (seconds)</span>
+            <input id="generator-totaltime" name="totaltime" type="number" min="1" value="45" />
+          </label>
+
+          <label class="generator-field">
+            <span>Clue interval (seconds)</span>
+            <input id="generator-interval" name="interval" type="number" min="1" value="5" />
+          </label>
+
+          <label class="generator-field">
+            <span>Reveal window (seconds)</span>
+            <input id="generator-reveal" name="reveal" type="number" min="0" placeholder="auto" />
+          </label>
+
+          <label class="generator-field">
+            <span>Sync delay (seconds)</span>
+            <input id="generator-sync" name="sync" type="number" min="0" value="0" />
+          </label>
+
+          <label class="generator-field">
+            <span>Auto-start delay (seconds)</span>
+            <input id="generator-autostart" name="autostart" type="number" min="0" value="0" />
+          </label>
+
+          <label class="generator-field">
+            <span>Mods</span>
+            <input id="generator-mods" name="mods" type="text" placeholder="modone,modtwo" autocomplete="off" />
+          </label>
+
+          <label class="generator-field generator-checkbox">
+            <span>Enable debug log</span>
+            <input id="generator-debug" name="debug" type="checkbox" />
+          </label>
+        </div>
+
+        <p class="generator-note">Use Twitch usernames for <code>mods</code>, separated by commas. Leave reveal blank to keep the automatic half-round reveal timing.</p>
+
+        <label class="generator-field generator-output">
+          <span>Generated URL</span>
+          <textarea id="generated-url" readonly></textarea>
+        </label>
+
+        <div class="generator-actions">
+          <button id="copy-generated-url" type="button">Copy URL</button>
+          <a id="open-generated-url" href="#" target="_blank" rel="noopener noreferrer">Open URL</a>
+        </div>
+
+        <p id="generator-status" class="generator-status" aria-live="polite"></p>
+      </div>
+    </section>
 
     <section class="help-section">
       <h2>URL options</h2>
@@ -41,7 +108,7 @@
     <section class="help-section">
       <h2>Example</h2>
       <code>
-        https://yourname.github.io/poke-game/?channel=yourchannel&clues=6&totaltime=45&interval=5&reveal=7&sync=0&autostart=10&mods=modone,modtwo&debug=true
+        https://jonjonbinx1.github.io/PokesOnStream/?channel=yourchannel&clues=6&totaltime=45&interval=5&reveal=7&sync=0&autostart=10&mods=modone,modtwo&debug=true
       </code>
     </section>
   </div>

@@ -31,8 +31,9 @@ body {
   font-family: "Pokemon", sans-serif;
   color: #ffcb05;
   text-shadow: 2px 2px 0px black;
-  font-size: clamp(20px, 2.2vw, 34px);
+  font-size: clamp(40px, 5vw, 78px);
   line-height: 1.05;
+  text-align: center;
 }
 
 #help > p {
@@ -59,6 +60,109 @@ body {
   font-size: 15px;
   color: #ffcb05;
   text-shadow: 2px 2px 0px black;
+}
+
+.url-generator {
+  display: grid;
+  gap: 10px;
+}
+
+.generator-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.generator-field {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.generator-field span {
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.generator-field input,
+.generator-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  color: white;
+  padding: 9px 10px;
+  font: inherit;
+}
+
+.generator-field input::placeholder,
+.generator-field textarea::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.generator-field textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.generator-checkbox {
+  align-content: end;
+}
+
+.generator-checkbox input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+}
+
+.generator-output {
+  grid-column: 1 / -1;
+}
+
+.generator-note,
+.generator-status {
+  font-size: 12px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.generator-note code {
+  display: inline;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: inherit;
+  word-break: normal;
+}
+
+.generator-status {
+  min-height: 1.2em;
+  color: #d8f3ff;
+}
+
+.generator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.generator-actions button,
+.generator-actions a {
+  appearance: none;
+  border: 1px solid rgba(255, 203, 5, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 203, 5, 0.15);
+  color: #ffcb05;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.generator-actions button:hover,
+.generator-actions a:hover {
+  background: rgba(255, 203, 5, 0.24);
 }
 
 .help-list {
@@ -177,8 +281,19 @@ body {
   font-family: "Pokemon", sans-serif;
   color: #ffcb05;
   text-shadow: 4px 4px 0px black;
-  font-size: clamp(40px, 7vw, 86px);
+  font-size: clamp(30px, 5vw, 64px);
   margin: 0 0 18px;
+  text-align: center;
+}
+
+.outcome-brand {
+  font-family: "Pokemon", sans-serif;
+  color: #ffcb05;
+  text-shadow: 4px 4px 0px black;
+  font-size: clamp(30px, 5vw, 64px);
+  line-height: 1.05;
+  margin: 0 0 12px;
+  text-align: center;
 }
 
 .outcome-subtitle {
@@ -350,6 +465,10 @@ body {
 }
 
 @media (max-width: 1100px) {
+  .generator-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .help-list {
     grid-template-columns: 1fr;
   }
@@ -369,6 +488,10 @@ body {
 }
 
 @media (max-width: 720px) {
+  .generator-grid {
+    grid-template-columns: 1fr;
+  }
+
   #game {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
