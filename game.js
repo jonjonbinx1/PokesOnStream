@@ -43,15 +43,18 @@ function clearRoundTimers() {
 
 function fitGameToViewport() {
     const game = document.getElementById("game");
-    if (!game) return;
+    if (!game || game.classList.contains("hidden")) return;
 
     game.style.transform = "none";
-    game.style.transformOrigin = "top left";
+    game.style.width = "";
+    game.style.height = "";
+    game.style.transformOrigin = "top center";
 
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const contentWidth = game.scrollWidth;
-    const contentHeight = game.scrollHeight;
+    const rect = game.getBoundingClientRect();
+    const contentWidth = Math.max(game.scrollWidth, rect.width);
+    const contentHeight = Math.max(game.scrollHeight, rect.height);
 
     if (!contentWidth || !contentHeight) return;
 
@@ -61,8 +64,6 @@ function fitGameToViewport() {
         viewportHeight / contentHeight
     );
 
-    game.style.width = `${Math.floor(viewportWidth / scale)}px`;
-    game.style.height = `${Math.floor(viewportHeight / scale)}px`;
     game.style.transform = `scale(${scale})`;
 }
 
