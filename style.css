@@ -12,16 +12,17 @@ body {
   box-sizing: border-box;
   height: 100vh;
   padding: 12px;
-  overflow: hidden;
+  overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   align-content: start;
 }
 
 #help h1,
 #help p,
-#help ul {
+#help ul,
+#help h2 {
   margin: 0;
 }
 
@@ -39,23 +40,42 @@ body {
   opacity: 0.95;
 }
 
-#help ul {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px 16px;
-  padding-left: 18px;
-  font-size: 12px;
-  line-height: 1.15;
+.help-intro {
+  max-width: 920px;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-#help li {
+.help-section {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.help-section h2 {
+  font-size: 15px;
+  color: #ffcb05;
+  text-shadow: 2px 2px 0px black;
+}
+
+.help-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.help-list li {
   margin: 0;
 }
 
 #help code {
   display: block;
-  grid-column: 1 / -1;
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.35);
@@ -330,7 +350,7 @@ body {
 }
 
 @media (max-width: 1100px) {
-  #help ul {
+  .help-list {
     grid-template-columns: 1fr;
   }
 
