@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pokémon Guessing Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/node-vibrant/3.1.6/vibrant.min.js"></script>
+</head>
+
+<body>
+  <div id="help" class="hidden">
+    <h1>Pokémon Guessing Browser Source</h1>
+    <p>Usage:</p>
+    <ul>
+      <li><code>?channel=YourTwitchName</code> – required to read chat.</li>
+      <li><code>&clues=6</code> – number of clues per round.</li>
+      <li><code>&totaltime=45</code> – total round time in seconds.</li>
+      <li><code>&interval=5</code> – seconds between clues.</li>
+      <li><code>&reveal=7</code> – seconds before end when sprite starts revealing.</li>
+      <li><code>&sync=0</code> – seconds users can guess before the round starts.</li>
+      <li><code>&autostart=10</code> – seconds after a round ends before the next round starts.</li>
+      <li><code>&debug=true</code> – enables browser console logging.</li>
+    </ul>
+    <p>Example:</p>
+    <code>
+      https://yourname.github.io/poke-game/?channel=yourchannel&clues=6&totaltime=45&interval=5&reveal=7&sync=0&autostart=10&debug=true
+    </code>
+  </div>
+
+  <div id="game" class="hidden">
+    <div id="status"></div>
+    <div id="clues"></div>
+
+    <div id="round-outcome" class="hidden" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="debug-log" class="hidden">
+      <h2>Debug Log</h2>
+      <div id="debug-log-list"></div>
+    </div>
+
+    <div id="silhouette">
+      <canvas id="poke-gif" width="220" height="220" aria-label="Guess the Pokémon"></canvas>
+    </div>
+
+    <div id="timer"></div>
+  </div>
+
+  <script src="twitch.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

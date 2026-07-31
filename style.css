@@ -1,0 +1,259 @@
+.hidden { display: none; }
+
+body {
+  margin: 0;
+  background: rgba(0,0,0,0);
+  font-family: sans-serif;
+  color: white;
+}
+
+/* Layout */
+#game {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  padding: 20px;
+  align-items: start;
+}
+
+#status {
+  grid-column: 1 / -1;
+  font-family: "Pokemon", sans-serif;
+  font-size: 28px;
+  color: #ffcb05;
+  text-shadow: 3px 3px 0px black;
+  letter-spacing: 1px;
+}
+
+#clues {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#debug-log {
+  grid-column: 1 / -1;
+  background: rgba(10, 10, 10, 0.75);
+  border: 2px solid rgba(255, 203, 5, 0.6);
+  border-radius: 12px;
+  padding: 12px 16px;
+  max-height: 220px;
+  overflow: hidden;
+}
+
+#debug-log h2 {
+  margin: 0 0 10px;
+  font-family: "Pokemon", sans-serif;
+  font-size: 24px;
+  color: #ffcb05;
+  text-shadow: 2px 2px 0px black;
+}
+
+#debug-log-list {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: monospace;
+  font-size: 13px;
+  color: #d8f3ff;
+}
+
+.debug-log-entry {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#round-outcome {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+#round-outcome.hidden {
+  display: none;
+}
+
+.outcome-title {
+  font-family: "Pokemon", sans-serif;
+  color: #ffcb05;
+  text-shadow: 4px 4px 0px black;
+  font-size: clamp(40px, 7vw, 86px);
+  margin: 0 0 18px;
+}
+
+.outcome-subtitle {
+  font-size: clamp(22px, 3vw, 34px);
+  margin: 0 0 24px;
+  max-width: 900px;
+}
+
+.outcome-sprite {
+  width: min(320px, 60vw);
+  height: min(320px, 60vw);
+  image-rendering: pixelated;
+  object-fit: contain;
+  margin-top: 10px;
+}
+
+.outcome-celebration {
+  font-size: clamp(18px, 2.6vw, 28px);
+  margin-top: 14px;
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 19999;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 12px;
+  height: 22px;
+  opacity: 0.95;
+  animation: confettiFall linear forwards;
+}
+
+@keyframes confettiFall {
+  to {
+    transform: translateY(110vh) rotate(720deg);
+  }
+}
+
+.celebrate-bounce {
+  animation: celebrateBounce 0.8s ease-out 1;
+}
+
+@keyframes celebrateBounce {
+  0% { transform: scale(0.8); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* Pokémon font */
+@font-face {
+  font-family: "Pokemon";
+  src: url("https://fonts.cdnfonts.com/s/17890/Pokemon%20Solid.ttf") format("truetype");
+}
+
+/* Clue cards */
+@keyframes slideIn {
+  from {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.clue-section {
+  background: linear-gradient(180deg, #2a75bb, #3c5aa6);
+  border: 4px solid #ffcb05;
+  border-radius: 12px;
+  padding: 12px;
+  animation: slideIn 0.5s ease-out;
+  font-family: "Pokemon", sans-serif;
+  color: white;
+  text-shadow: 2px 2px 0px black;
+  font-size: 18px;
+}
+
+.clue-section h2 {
+  font-size: 34px;
+  margin-bottom: 6px;
+  color: #ffcb05;
+  text-shadow: 2px 2px 0px black;
+}
+
+.clue-section span,
+.clue-content {
+  font-family: sans-serif;
+  font-size: 27px;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.clue-content span,
+.clue-content div,
+.clue-content p {
+  font-size: 27px;
+}
+
+/* Color bar */
+.color-swatches {
+  display: flex;
+  height: 20px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.color-swatch {
+  height: 100%;
+}
+
+/* Stats bars */
+.stat-bar {
+  height: 14px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 4px;
+  border: 2px solid #ffcb05;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s ease-out, background-color 0.3s ease-out;
+}
+
+/* Silhouette / sprite */
+#silhouette {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 70px;
+}
+
+#poke-gif {
+  width: 220px;
+  height: 220px;
+  image-rendering: pixelated;
+}
+
+/* Invisible at start */
+.s-hidden {
+  visibility: hidden;
+}
+
+/* Timer */
+#timer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  font-family: "Pokemon", sans-serif;
+  font-size: 48px;
+  color: #ffcb05;
+  text-shadow: 3px 3px 0px black;
+  z-index: 9999;
+}
