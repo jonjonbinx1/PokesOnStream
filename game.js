@@ -41,6 +41,31 @@ function clearRoundTimers() {
     }
 }
 
+function fitGameToViewport() {
+    const game = document.getElementById("game");
+    if (!game) return;
+
+    game.style.transform = "none";
+    game.style.transformOrigin = "top left";
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const contentWidth = game.scrollWidth;
+    const contentHeight = game.scrollHeight;
+
+    if (!contentWidth || !contentHeight) return;
+
+    const scale = Math.min(
+        1,
+        viewportWidth / contentWidth,
+        viewportHeight / contentHeight
+    );
+
+    game.style.width = `${Math.floor(viewportWidth / scale)}px`;
+    game.style.height = `${Math.floor(viewportHeight / scale)}px`;
+    game.style.transform = `scale(${scale})`;
+}
+
 function normalizeText(value) {
     return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -225,6 +250,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     document.getElementById("game").classList.remove("hidden");
+    requestAnimationFrame(fitGameToViewport);
+    window.addEventListener("resize", fitGameToViewport);
 
     startRound(params);
     startChatClient(params.channel);
@@ -450,6 +477,7 @@ async function startRound(params) {
     }, params.interval * 1000);
 
     gameState.timerIds.push(timerTick, revealInterval, clueInterval);
+    requestAnimationFrame(fitGameToViewport);
 }
 
 function loadImage(src) {
