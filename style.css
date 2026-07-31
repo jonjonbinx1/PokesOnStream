@@ -5,30 +5,34 @@ body {
   background: rgba(0,0,0,0);
   font-family: sans-serif;
   color: white;
+  overflow: hidden;
 }
 
 /* Layout */
 #game {
   display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 12px;
+  padding: 12px;
+  box-sizing: border-box;
+  height: 100vh;
   align-items: start;
 }
 
 #status {
   grid-column: 1 / -1;
   font-family: "Pokemon", sans-serif;
-  font-size: 28px;
+  font-size: clamp(20px, 2vw, 28px);
   color: #ffcb05;
   text-shadow: 3px 3px 0px black;
   letter-spacing: 1px;
 }
 
 #clues {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-content: start;
 }
 
 #debug-log {
@@ -168,17 +172,17 @@ body {
   background: linear-gradient(180deg, #2a75bb, #3c5aa6);
   border: 4px solid #ffcb05;
   border-radius: 12px;
-  padding: 12px;
+  padding: 10px;
   animation: slideIn 0.5s ease-out;
   font-family: "Pokemon", sans-serif;
   color: white;
   text-shadow: 2px 2px 0px black;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .clue-section h2 {
-  font-size: 34px;
-  margin-bottom: 6px;
+  font-size: 24px;
+  margin: 0 0 4px;
   color: #ffcb05;
   text-shadow: 2px 2px 0px black;
 }
@@ -186,8 +190,8 @@ body {
 .clue-section span,
 .clue-content {
   font-family: sans-serif;
-  font-size: 27px;
-  line-height: 1.35;
+  font-size: 18px;
+  line-height: 1.2;
   letter-spacing: 0;
   text-shadow: none;
 }
@@ -195,7 +199,7 @@ body {
 .clue-content span,
 .clue-content div,
 .clue-content p {
-  font-size: 27px;
+  font-size: 18px;
 }
 
 /* Color bar */
@@ -232,12 +236,15 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 70px;
+  margin-top: 0;
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  align-self: center;
 }
 
 #poke-gif {
-  width: 220px;
-  height: 220px;
+  width: 180px;
+  height: 180px;
   image-rendering: pixelated;
 }
 
@@ -249,11 +256,26 @@ body {
 /* Timer */
 #timer {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 12px;
+  right: 12px;
   font-family: "Pokemon", sans-serif;
-  font-size: 48px;
+  font-size: clamp(32px, 3vw, 48px);
   color: #ffcb05;
   text-shadow: 3px 3px 0px black;
   z-index: 9999;
+}
+
+@media (max-width: 1100px) {
+  #game {
+    grid-template-columns: 1fr 180px;
+  }
+
+  #clues {
+    grid-template-columns: 1fr;
+  }
+
+  #poke-gif {
+    width: 160px;
+    height: 160px;
+  }
 }
