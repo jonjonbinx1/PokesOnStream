@@ -71,6 +71,20 @@ function normalizeText(value) {
     return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function getPokemonGuessAliases(pokemon) {
+    const aliases = new Set();
+
+    if (pokemon?.name) {
+        aliases.add(normalizeText(pokemon.name));
+    }
+
+    if (pokemon?.speciesName) {
+        aliases.add(normalizeText(pokemon.speciesName));
+    }
+
+    return Array.from(aliases).filter(Boolean);
+}
+
 function isAllowedNextPokeUser(username, params) {
     const normalizedUsername = normalizeText(username);
     const streamerName = normalizeText(params.channel || "");
@@ -377,6 +391,7 @@ function transformPokemonData(pkm, species) {
     return {
         id: pkm.id,
         name: pkm.name,
+        speciesName: species.name,
         types,
         abilities,
         stats,
@@ -696,10 +711,11 @@ function handleChatMessage(username, message) {
     if (!normalizedMessage || normalizedMessage.startsWith("!")) return;
 
     const correctAnswer = normalizeText(pokemon.name);
+    const acceptedAnswers = getPokemonGuessAliases(pokemon);
 
     debugLog("Guess received", { username, guess: trimmedMessage });
 
-    if (normalizedMessage === correctAnswer) {
+    if (acceptedAnswers.includes(normalizedMessage)) {
         gameState.guessedCorrectly = true;
         gameState.roundFinished = true;
         gameState.winnerName = username;
