@@ -405,11 +405,7 @@ function buildOverlayUrlFromForm() {
         url.searchParams.set("debug", "true");
     }
 
-    if (leaderboardMode === "popup") {
-        url.searchParams.set("leaderboard", "true");
-    } else if (leaderboardMode === "always") {
-        url.searchParams.set("leaderboard", "always");
-    }
+    url.searchParams.set("leaderboard", leaderboardMode);
 
     return { url, channel };
 }

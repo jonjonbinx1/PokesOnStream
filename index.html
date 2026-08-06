@@ -64,7 +64,7 @@
 
           <label class="generator-field">
             <span>Leaderboard display</span>
-            <select id="generator-leaderboard" name="leaderboard">
+            <select id="generator-leaderboard" name="leaderboard" onchange="updateGeneratedUrl()">
               <option value="off">Off</option>
               <option value="popup">After each round</option>
               <option value="always">Always visible</option>
@@ -100,9 +100,9 @@
         <li><code>&synctime=0</code> – legacy alias for <code>sync</code>. Use either one, but <code>sync</code> is preferred.</li>
         <li><code>&autostart=10</code> – seconds to wait after a round ends before the next one starts automatically. Default: <strong>0</strong> (manual / no auto-start).</li>
         <li><code>&mods=user1,user2</code> – comma-separated Twitch usernames allowed to use the moderator-only round skip command.</li>
-        <li><code>&leaderboard=true</code> – shows a session leaderboard in the end-of-round popup.</li>
+        <li><code>&leaderboard=off</code> – disables the leaderboard entirely. Default: <strong>off</strong>.</li>
+        <li><code>&leaderboard=popup</code> – shows a session leaderboard in the end-of-round popup.</li>
         <li><code>&leaderboard=always</code> – keeps the session leaderboard visible during play instead of only after rounds.</li>
-        <li><code>&leaderboardmode=popup</code> or <code>&leaderboardmode=always</code> – optional legacy-friendly mode override if you want to separate enablement from display mode.</li>
         <li><code>&debug=true</code> – shows the on-screen debug log and browser console messages. Default: <strong>false</strong>.</li>
       </ul>
     </section>
