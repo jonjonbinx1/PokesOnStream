@@ -61,6 +61,15 @@
             <span>Enable debug log</span>
             <input id="generator-debug" name="debug" type="checkbox" />
           </label>
+
+          <label class="generator-field">
+            <span>Leaderboard display</span>
+            <select id="generator-leaderboard" name="leaderboard">
+              <option value="off">Off</option>
+              <option value="popup">After each round</option>
+              <option value="always">Always visible</option>
+            </select>
+          </label>
         </div>
 
         <p class="generator-note">Use Twitch usernames for <code>mods</code>, separated by commas. Leave reveal blank to keep the automatic half-round reveal timing.</p>
@@ -91,6 +100,9 @@
         <li><code>&synctime=0</code> – legacy alias for <code>sync</code>. Use either one, but <code>sync</code> is preferred.</li>
         <li><code>&autostart=10</code> – seconds to wait after a round ends before the next one starts automatically. Default: <strong>0</strong> (manual / no auto-start).</li>
         <li><code>&mods=user1,user2</code> – comma-separated Twitch usernames allowed to use the moderator-only round skip command.</li>
+        <li><code>&leaderboard=true</code> – shows a session leaderboard in the end-of-round popup.</li>
+        <li><code>&leaderboard=always</code> – keeps the session leaderboard visible during play instead of only after rounds.</li>
+        <li><code>&leaderboardmode=popup</code> or <code>&leaderboardmode=always</code> – optional legacy-friendly mode override if you want to separate enablement from display mode.</li>
         <li><code>&debug=true</code> – shows the on-screen debug log and browser console messages. Default: <strong>false</strong>.</li>
       </ul>
     </section>
@@ -101,14 +113,15 @@
         <li>Viewers guess by typing the Pokémon name in Twitch chat.</li>
         <li>Messages starting with <code>!</code> are ignored, so normal bot commands do not count as guesses.</li>
         <li><code>nextpoke</code> starts the next round immediately.</li>
-        <li>Only the streamer in <code>channel</code> and usernames listed in <code>mods</code> can use <code>nextpoke</code>.</li>
+        <li><code>resetleaderboard</code> clears the session leaderboard.</li>
+        <li>Only the streamer in <code>channel</code> and usernames listed in <code>mods</code> can use <code>nextpoke</code> and <code>resetleaderboard</code>.</li>
       </ul>
     </section>
 
     <section class="help-section">
       <h2>Example</h2>
       <code>
-        https://jonjonbinx1.github.io/PokesOnStream/?channel=yourchannel&clues=6&totaltime=45&interval=5&reveal=7&sync=0&autostart=10&mods=modone,modtwo&debug=true
+        https://jonjonbinx1.github.io/PokesOnStream/?channel=yourchannel&clues=6&totaltime=45&interval=5&reveal=7&sync=0&autostart=10&mods=modone,modtwo&leaderboard=always&debug=true
       </code>
     </section>
   </div>
@@ -116,6 +129,7 @@
   <div id="game" class="hidden">
     <div id="status"></div>
     <div id="clues"></div>
+    <div id="leaderboard-panel" class="hidden" aria-live="polite" aria-atomic="true"></div>
 
     <div id="round-outcome" class="hidden" aria-live="polite" aria-atomic="true"></div>
 

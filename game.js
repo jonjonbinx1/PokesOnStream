@@ -3,8 +3,25 @@ function getParams() {
     const revealParam = url.searchParams.get("reveal");
     const syncParam = url.searchParams.get("sync");
     const autoStartParam = url.searchParams.get("autostart");
+    const leaderboardParam = url.searchParams.get("leaderboard");
+    const leaderboardModeParam = url.searchParams.get("leaderboardmode");
     const modsParam = url.searchParams.get("mods") || "";
     const debugParam = url.searchParams.get("debug");
+
+    const normalizedLeaderboardValue = (leaderboardParam || "").trim().toLowerCase();
+    const normalizedLeaderboardMode = (leaderboardModeParam || "").trim().toLowerCase();
+
+    let leaderboardMode = "off";
+    if (normalizedLeaderboardValue === "always" || normalizedLeaderboardMode === "always") {
+        leaderboardMode = "always";
+    } else if (
+        normalizedLeaderboardValue === "true"
+        || normalizedLeaderboardValue === "popup"
+        || normalizedLeaderboardMode === "popup"
+    ) {
+        leaderboardMode = "popup";
+    }
+
     return {
         channel: url.searchParams.get("channel"),
         clues: parseInt(url.searchParams.get("clues") || "6", 10),
@@ -17,6 +34,8 @@ function getParams() {
             .map(name => normalizeText(name))
             .filter(Boolean),
         debug: debugParam === "true",
+        leaderboard: leaderboardMode !== "off",
+        leaderboardMode,
         reveal: revealParam === null ? null : parseInt(revealParam, 10)
     };
 }
@@ -28,6 +47,8 @@ const gameState = {
     guessedCorrectly: false,
     roundFinished: false,
     winnerName: "",
+    sessionScores: {},
+    roundStartedAt: 0,
     autoStartTimerId: null,
     timerIds: []
 };
@@ -142,6 +163,132 @@ function createConfetti() {
     setTimeout(() => confetti.remove(), 4000);
 }
 
+function formatSolveTime(milliseconds) {
+    if (!Number.isFinite(milliseconds) || milliseconds < 0) {
+        return "--";
+    }
+
+    const totalTenths = Math.round(milliseconds / 100);
+    const minutes = Math.floor(totalTenths / 600);
+    const seconds = Math.floor((totalTenths % 600) / 10);
+    const tenths = totalTenths % 10;
+
+    return `${minutes}:${seconds.toString().padStart(2, "0")}.${tenths}`;
+}
+
+function getLeaderboardEntries() {
+    return Object.entries(gameState.sessionScores)
+        .sort((left, right) => {
+            if (right[1].score !== left[1].score) {
+                return right[1].score - left[1].score;
+            }
+
+            if (left[1].fastestMs == null && right[1].fastestMs != null) {
+                return 1;
+            }
+
+            if (right[1].fastestMs == null && left[1].fastestMs != null) {
+                return -1;
+            }
+
+            if (left[1].fastestMs != null && right[1].fastestMs != null && left[1].fastestMs !== right[1].fastestMs) {
+                return left[1].fastestMs - right[1].fastestMs;
+            }
+
+            return left[0].localeCompare(right[0]);
+        });
+}
+
+function createLeaderboardCard(extraClassName = "") {
+    const wrap = document.createElement("section");
+    wrap.className = ["leaderboard-card", extraClassName].filter(Boolean).join(" ");
+
+    const heading = document.createElement("h2");
+    heading.className = "leaderboard-title";
+    heading.textContent = "Session Leaderboard";
+    wrap.appendChild(heading);
+
+    const entries = getLeaderboardEntries();
+
+    if (entries.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "leaderboard-empty";
+        empty.textContent = "No correct guesses yet this session.";
+        wrap.appendChild(empty);
+        return wrap;
+    }
+
+    const list = document.createElement("div");
+    list.className = "leaderboard-list";
+
+    entries.slice(0, 5).forEach(([name, stats], index) => {
+        const item = document.createElement("div");
+        item.className = "leaderboard-item";
+
+        const rank = document.createElement("span");
+        rank.className = "leaderboard-rank";
+        rank.textContent = `#${index + 1}`;
+
+        const player = document.createElement("span");
+        player.className = "leaderboard-player";
+        player.textContent = name;
+
+        const meta = document.createElement("div");
+        meta.className = "leaderboard-meta";
+
+        const points = document.createElement("span");
+        points.className = "leaderboard-score";
+        points.textContent = `${stats.score} ${stats.score === 1 ? "point" : "points"}`;
+
+        const fastest = document.createElement("span");
+        fastest.className = "leaderboard-fastest";
+        fastest.textContent = `Best ${formatSolveTime(stats.fastestMs)}`;
+
+        meta.appendChild(points);
+        meta.appendChild(fastest);
+
+        item.appendChild(rank);
+        item.appendChild(player);
+        item.appendChild(meta);
+        list.appendChild(item);
+    });
+
+    wrap.appendChild(list);
+    return wrap;
+}
+
+function syncPersistentLeaderboard() {
+    const panel = document.getElementById("leaderboard-panel");
+    if (!panel) return;
+
+    const shouldShow = gameState.params?.leaderboardMode === "always";
+    panel.classList.toggle("hidden", !shouldShow);
+
+    if (!shouldShow) {
+        panel.innerHTML = "";
+        return;
+    }
+
+    panel.innerHTML = "";
+    panel.appendChild(createLeaderboardCard("persistent-leaderboard"));
+}
+
+function syncOutcomeLeaderboard() {
+    const outcome = document.getElementById("round-outcome");
+    if (!outcome || outcome.classList.contains("hidden")) return;
+
+    const currentLeaderboard = outcome.querySelector(".outcome-leaderboard");
+    if (!currentLeaderboard) return;
+
+    currentLeaderboard.replaceWith(createLeaderboardCard("outcome-leaderboard"));
+}
+
+function resetLeaderboard() {
+    gameState.sessionScores = {};
+    syncPersistentLeaderboard();
+    syncOutcomeLeaderboard();
+}
+
 function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
     const outcome = document.getElementById("round-outcome");
     if (!outcome) return;
@@ -189,6 +336,10 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
         outcome.appendChild(subtitle);
     }
 
+    if (gameState.params?.leaderboard && gameState.params?.leaderboardMode !== "always") {
+        outcome.appendChild(createLeaderboardCard("outcome-leaderboard"));
+    }
+
     scheduleAutoStart(gameState.params || {});
 }
 
@@ -231,6 +382,7 @@ function buildOverlayUrlFromForm() {
     const autoStart = document.getElementById("generator-autostart")?.value.trim() || "0";
     const mods = document.getElementById("generator-mods")?.value.trim() || "";
     const debug = document.getElementById("generator-debug")?.checked;
+    const leaderboardMode = document.getElementById("generator-leaderboard")?.value || "off";
 
     const url = new URL("https://jonjonbinx1.github.io/PokesOnStream/");
 
@@ -251,6 +403,12 @@ function buildOverlayUrlFromForm() {
 
     if (debug) {
         url.searchParams.set("debug", "true");
+    }
+
+    if (leaderboardMode === "popup") {
+        url.searchParams.set("leaderboard", "true");
+    } else if (leaderboardMode === "always") {
+        url.searchParams.set("leaderboard", "always");
     }
 
     return { url, channel };
@@ -299,9 +457,11 @@ function setupHelpPageGenerator() {
         baseLabel.textContent = "https://jonjonbinx1.github.io/PokesOnStream/";
     }
 
-    const fields = help.querySelectorAll("input");
+    const fields = help.querySelectorAll("input, select");
     fields.forEach(field => {
-        const eventName = field.type === "checkbox" ? "change" : "input";
+        const eventName = field.tagName === "SELECT" || field.type === "checkbox"
+            ? "change"
+            : "input";
         field.addEventListener(eventName, updateGeneratedUrl);
     });
 
@@ -361,6 +521,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     document.getElementById("game").classList.remove("hidden");
+    syncPersistentLeaderboard();
     requestAnimationFrame(fitGameToViewport);
     window.addEventListener("resize", fitGameToViewport);
 
@@ -459,6 +620,7 @@ async function startRound(params) {
     if (roundId !== gameState.roundId) return;
 
     gameState.currentPokemon = mon;
+    gameState.roundStartedAt = Date.now();
     debugLog("Loaded Pokémon", mon.name);
 
     const gifEl = document.getElementById("poke-gif");
@@ -707,21 +869,36 @@ function handleChatMessage(username, message) {
         return;
     }
 
+    if (normalizedMessage === "resetleaderboard" && isAllowedNextPokeUser(username, params)) {
+        debugLog("Leaderboard reset requested", { username, message: trimmedMessage });
+        resetLeaderboard();
+        setStatus(`${username} reset the leaderboard`);
+        return;
+    }
+
     if (!pokemon || gameState.guessedCorrectly || gameState.roundFinished) return;
     if (!normalizedMessage || normalizedMessage.startsWith("!")) return;
-
-    const correctAnswer = normalizeText(pokemon.name);
     const acceptedAnswers = getPokemonGuessAliases(pokemon);
 
     debugLog("Guess received", { username, guess: trimmedMessage });
 
     if (acceptedAnswers.includes(normalizedMessage)) {
+        const solveTimeMs = Math.max(0, Date.now() - gameState.roundStartedAt);
+        const currentStats = gameState.sessionScores[username] || { score: 0, fastestMs: null };
+
         gameState.guessedCorrectly = true;
         gameState.roundFinished = true;
         gameState.winnerName = username;
+        gameState.sessionScores[username] = {
+            score: currentStats.score + 1,
+            fastestMs: currentStats.fastestMs == null
+                ? solveTimeMs
+                : Math.min(currentStats.fastestMs, solveTimeMs)
+        };
+        syncPersistentLeaderboard();
         setStatus(`${username} got it right: ${pokemon.name}`);
         showRoundOutcome({ win: true, winnerName: username, pokemon });
-        debugLog("Correct guess", { username, pokemon: pokemon.name });
+        debugLog("Correct guess", { username, pokemon: pokemon.name, solveTimeMs });
         return;
     }
 
