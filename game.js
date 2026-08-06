@@ -5,6 +5,7 @@ function getParams() {
     const autoStartParam = url.searchParams.get("autostart");
     const leaderboardParam = url.searchParams.get("leaderboard");
     const leaderboardModeParam = url.searchParams.get("leaderboardmode");
+    const helpParam = url.searchParams.get("help");
     const modsParam = url.searchParams.get("mods") || "";
     const debugParam = url.searchParams.get("debug");
 
@@ -36,6 +37,7 @@ function getParams() {
         debug: debugParam === "true",
         leaderboard: leaderboardMode !== "off",
         leaderboardMode,
+        helpOpen: helpParam === "true",
         reveal: revealParam === null ? null : parseInt(revealParam, 10)
     };
 }
@@ -116,6 +118,25 @@ function setStatus(message) {
     const statusEl = document.getElementById("status");
     if (statusEl) {
         statusEl.textContent = message;
+    }
+}
+
+function setHelpVisibility(isVisible, { overlay = false } = {}) {
+    const help = document.getElementById("help");
+    const helpOpenButton = document.getElementById("help-open-button");
+    const helpCloseButton = document.getElementById("help-close-button");
+
+    if (!help) return;
+
+    help.classList.toggle("hidden", !isVisible);
+    help.classList.toggle("help-overlay", overlay);
+
+    if (helpOpenButton) {
+        helpOpenButton.classList.toggle("hidden", !overlay || isVisible);
+    }
+
+    if (helpCloseButton) {
+        helpCloseButton.classList.toggle("hidden", !overlay || !isVisible);
     }
 }
 
@@ -466,6 +487,12 @@ function setupHelpPageGenerator() {
     });
 
     document.getElementById("copy-generated-url")?.addEventListener("click", copyGeneratedUrl);
+    document.getElementById("help-open-button")?.addEventListener("click", () => {
+        setHelpVisibility(true, { overlay: true });
+    });
+    document.getElementById("help-close-button")?.addEventListener("click", () => {
+        setHelpVisibility(false, { overlay: true });
+    });
 
     updateGeneratedUrl();
 }
@@ -516,11 +543,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     debugLog("Params", params);
 
     if (!params.channel) {
-        document.getElementById("help").classList.remove("hidden");
+        setHelpVisibility(true, { overlay: false });
         return;
     }
 
     document.getElementById("game").classList.remove("hidden");
+    setHelpVisibility(params.helpOpen, { overlay: true });
     syncPersistentLeaderboard();
     requestAnimationFrame(fitGameToViewport);
     window.addEventListener("resize", fitGameToViewport);

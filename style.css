@@ -19,6 +19,41 @@ body {
   align-content: start;
 }
 
+#help.help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 25000;
+  background: rgba(5, 10, 18, 0.94);
+  backdrop-filter: blur(6px);
+}
+
+.help-toggle,
+.help-close {
+  appearance: none;
+  border: 1px solid rgba(255, 203, 5, 0.65);
+  border-radius: 999px;
+  background: rgba(15, 32, 64, 0.88);
+  color: #ffcb05;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.help-toggle {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 22000;
+}
+
+.help-close {
+  position: sticky;
+  top: 0;
+  justify-self: end;
+  z-index: 1;
+}
+
 #help h1,
 #help p,
 #help ul,
