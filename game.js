@@ -131,20 +131,7 @@ function getSyncedLocalRoundStartAt(params, roundIndex) {
 
 function scheduleSyncedLocalRound(params, roundIndex) {
     const startAt = getSyncedLocalRoundStartAt(params, roundIndex);
-    const countdownLeadMs = SYNCED_LOCAL_COUNTDOWN_SECONDS * 1000;
-    const delayMs = Math.max(0, startAt - Date.now() - countdownLeadMs);
-
-    if (gameState.autoStartTimerId) {
-        clearTimeout(gameState.autoStartTimerId);
-    }
-
-    gameState.autoStartTimerId = setTimeout(() => {
-        gameState.autoStartTimerId = null;
-        startRound(params, { startAt, roundIndex });
-    }, delayMs);
-
-    const secondsUntilStart = Math.max(0, Math.ceil((startAt - Date.now()) / 1000));
-    setStatus(`Synced round ${roundIndex + 1} starts in ${secondsUntilStart}s`);
+    startRound(params, { startAt, roundIndex });
 }
 
 function fitGameToViewport() {
@@ -228,11 +215,57 @@ function hideCountdownOverlay() {
     overlay.textContent = "";
 }
 
+function clearPokemonDisplay() {
+    const gifEl = document.getElementById("poke-gif");
+    if (!gifEl) return;
+
+    const gifCtx = gifEl.getContext("2d");
+    gifEl.className = "s-hidden";
+    gifEl.style.visibility = "hidden";
+    gifCtx.clearRect(0, 0, gifEl.width, gifEl.height);
+}
+
+function getLocalCountdownAnnouncement(msUntilStart) {
+    const safeMsUntilStart = Math.max(1, msUntilStart);
+    const secondsRemaining = Math.max(1, Math.ceil(safeMsUntilStart / 1000));
+
+    if (safeMsUntilStart >= 60000) {
+        const minutesRemaining = Math.ceil(safeMsUntilStart / 60000);
+        const minuteLabel = `${minutesRemaining} minute${minutesRemaining === 1 ? "" : "s"}`;
+        return {
+            overlayValue: minuteLabel,
+            statusValue: minuteLabel
+        };
+    }
+
+    if (safeMsUntilStart >= 15000) {
+        return { overlayValue: "30", statusValue: "30 seconds" };
+    }
+
+    if (safeMsUntilStart >= 10000) {
+        return { overlayValue: "15", statusValue: "15 seconds" };
+    }
+
+    if (safeMsUntilStart >= 5000) {
+        return { overlayValue: "10", statusValue: "10 seconds" };
+    }
+
+    if (safeMsUntilStart >= 3000) {
+        return { overlayValue: "5", statusValue: "5 seconds" };
+    }
+
+    return {
+        overlayValue: String(secondsRemaining),
+        statusValue: `${secondsRemaining} second${secondsRemaining === 1 ? "" : "s"}`
+    };
+}
+
 function startLocalCountdown(params, roundId, options = {}) {
     const { startAt = null, roundIndex = null } = options;
 
     if (Number.isFinite(startAt)) {
         const roundLabel = Number.isInteger(roundIndex) ? roundIndex + 1 : null;
+        let lastOverlayValue = null;
 
         const tick = () => {
             if (roundId !== gameState.roundId) return;
@@ -244,15 +277,19 @@ function startLocalCountdown(params, roundId, options = {}) {
                 return;
             }
 
-            const secondsRemaining = Math.max(1, Math.ceil(msUntilStart / 1000));
-            showCountdownOverlay(secondsRemaining);
-            setStatus(
-                roundLabel == null
-                    ? `Round starts in ${secondsRemaining}`
-                    : `Synced round ${roundLabel} starts in ${secondsRemaining}`
-            );
+            const { overlayValue, statusValue } = getLocalCountdownAnnouncement(msUntilStart);
 
-            const timerId = setTimeout(tick, 100);
+            if (overlayValue !== lastOverlayValue) {
+                showCountdownOverlay(overlayValue);
+                setStatus(
+                    roundLabel == null
+                        ? `Round starts in ${statusValue}`
+                        : `Synced round ${roundLabel} starts in ${statusValue}`
+                );
+                lastOverlayValue = overlayValue;
+            }
+
+            const timerId = setTimeout(tick, 250);
             gameState.timerIds.push(timerId);
         };
 
@@ -461,6 +498,8 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
     if (!outcome) return;
 
     const params = gameState.params || {};
+
+    clearRoundTimers();
 
     outcome.innerHTML = "";
     outcome.classList.remove("hidden");
@@ -1196,6 +1235,7 @@ async function startRound(params, options = {}) {
     hideCountdownOverlay();
     setStatus(params.isLocal ? "Get ready" : `Sync time: ${Math.max(0, params.sync)}s`);
     hideRoundOutcome();
+    clearPokemonDisplay();
 
     const cluesEl = document.getElementById("clues");
     cluesEl.innerHTML = "";
