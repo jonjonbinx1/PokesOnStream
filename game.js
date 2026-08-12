@@ -215,6 +215,36 @@ function hideCountdownOverlay() {
     overlay.textContent = "";
 }
 
+function ensureOutcomeCountdown() {
+    const outcome = document.getElementById("round-outcome");
+    if (!outcome) return null;
+
+    let countdown = outcome.querySelector(".outcome-countdown");
+    if (countdown) return countdown;
+
+    countdown = document.createElement("div");
+    countdown.className = "outcome-countdown hidden";
+    outcome.appendChild(countdown);
+    return countdown;
+}
+
+function showOutcomeCountdown(value) {
+    const countdown = ensureOutcomeCountdown();
+    if (!countdown) return;
+
+    countdown.textContent = String(value);
+    countdown.classList.remove("hidden");
+}
+
+function hideOutcomeCountdown() {
+    const outcome = document.getElementById("round-outcome");
+    const countdown = outcome?.querySelector(".outcome-countdown");
+    if (!countdown) return;
+
+    countdown.classList.add("hidden");
+    countdown.textContent = "";
+}
+
 function clearPokemonDisplay() {
     const gifEl = document.getElementById("poke-gif");
     if (!gifEl) return;
@@ -276,6 +306,7 @@ function startLocalCountdown(params, roundId, options = {}) {
             const msUntilStart = startAt - Date.now();
             if (msUntilStart <= 0) {
                 hideCountdownOverlay();
+                hideOutcomeCountdown();
                 hideRoundOutcome();
                 runRound(params, roundId, { roundIndex, startAt });
                 return;
@@ -289,7 +320,8 @@ function startLocalCountdown(params, roundId, options = {}) {
                 };
 
             if (overlayValue !== lastOverlayValue) {
-                const shouldUseOverlay = useExtendedMilestones || ["3", "2", "1"].includes(overlayValue);
+                const shouldUseOverlay = useExtendedMilestones;
+                const shouldUseOutcomeCountdown = preserveOutcomeDuringWait && ["3", "2", "1"].includes(overlayValue);
 
                 if (shouldUseOverlay) {
                     showCountdownOverlay(overlayValue);
@@ -297,7 +329,13 @@ function startLocalCountdown(params, roundId, options = {}) {
                     hideCountdownOverlay();
                 }
 
-                if (useExtendedMilestones || ["3", "2", "1"].includes(overlayValue)) {
+                if (shouldUseOutcomeCountdown) {
+                    showOutcomeCountdown(overlayValue);
+                } else {
+                    hideOutcomeCountdown();
+                }
+
+                if (useExtendedMilestones || shouldUseOutcomeCountdown) {
                     setStatus(
                         roundLabel == null
                             ? `Round starts in ${statusValue}`
@@ -325,6 +363,7 @@ function startLocalCountdown(params, roundId, options = {}) {
         const currentValue = countdownValues[index];
         if (!currentValue) {
             hideCountdownOverlay();
+            hideOutcomeCountdown();
             hideRoundOutcome();
             runRound(params, roundId);
             return;
@@ -523,6 +562,7 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
 
     outcome.innerHTML = "";
     outcome.classList.remove("hidden");
+    hideOutcomeCountdown();
 
     const brand = document.createElement("div");
     brand.className = "outcome-brand";

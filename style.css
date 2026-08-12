@@ -411,6 +411,25 @@ body {
   margin-top: 10px;
 }
 
+.outcome-countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Pokemon", sans-serif;
+  font-size: clamp(72px, 18vw, 180px);
+  color: #ffcb05;
+  text-shadow: 6px 6px 0px black;
+  letter-spacing: 2px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.outcome-countdown.hidden {
+  display: none;
+}
+
 .outcome-celebration {
   font-size: clamp(18px, 2.6vw, 28px);
   margin-top: 14px;
