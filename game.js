@@ -273,6 +273,7 @@ function startLocalCountdown(params, roundId, options = {}) {
             const msUntilStart = startAt - Date.now();
             if (msUntilStart <= 0) {
                 hideCountdownOverlay();
+                hideRoundOutcome();
                 runRound(params, roundId, { roundIndex, startAt });
                 return;
             }
@@ -306,6 +307,7 @@ function startLocalCountdown(params, roundId, options = {}) {
         const currentValue = countdownValues[index];
         if (!currentValue) {
             hideCountdownOverlay();
+            hideRoundOutcome();
             runRound(params, roundId);
             return;
         }
@@ -1234,8 +1236,11 @@ async function startRound(params, options = {}) {
 
     hideCountdownOverlay();
     setStatus(params.isLocal ? "Get ready" : `Sync time: ${Math.max(0, params.sync)}s`);
-    hideRoundOutcome();
     clearPokemonDisplay();
+
+    if (!params.isLocal) {
+        hideRoundOutcome();
+    }
 
     const cluesEl = document.getElementById("clues");
     cluesEl.innerHTML = "";
