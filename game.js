@@ -866,6 +866,15 @@ function buildClueFunctions(mon, roundId) {
     const fns = [];
     const isLocal = Boolean(gameState.params?.isLocal);
     const compactStatOrder = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"];
+    const compactStatLabels = {
+        hp: "HP",
+        attack: "Attack",
+        defense: "Defense",
+        "special-attack": "Sp. Attack",
+        "special-defense": "Sp. Defense",
+        speed: "Speed"
+    };
+    const localStatClues = shuffleArray(compactStatOrder.slice()).slice(0, 2);
 
     fns.push(() => {
         const content = createClueBlock("Type");
@@ -895,33 +904,9 @@ function buildClueFunctions(mon, roundId) {
     fns.push(() => {
         const content = createClueBlock("Stats");
         if (isLocal) {
-            content.classList.add("compact-stats");
-            compactStatOrder.forEach(statName => {
-                const value = mon.stats[statName];
-                if (!Number.isFinite(value)) return;
-
-                const chip = document.createElement("div");
-                chip.className = "stat-chip";
-
-                const label = document.createElement("span");
-                label.className = "stat-chip-label";
-                label.textContent = statName
-                    .replace("special-attack", "SpA")
-                    .replace("special-defense", "SpD")
-                    .replace("attack", "Atk")
-                    .replace("defense", "Def")
-                    .replace("speed", "Spe")
-                    .replace("hp", "HP");
-
-                const number = document.createElement("span");
-                number.className = "stat-chip-value";
-                number.textContent = String(value);
-                number.style.color = statColor(value);
-
-                chip.appendChild(label);
-                chip.appendChild(number);
-                content.appendChild(chip);
-            });
+            const firstStat = localStatClues[0];
+            const value = mon.stats[firstStat];
+            content.textContent = `${compactStatLabels[firstStat]}: ${value}`;
             return;
         }
 
@@ -942,6 +927,14 @@ function buildClueFunctions(mon, roundId) {
             content.appendChild(bar);
         });
     });
+
+    if (isLocal) {
+        fns.push(() => {
+            const secondStat = localStatClues[1];
+            const content = createClueBlock(compactStatLabels[secondStat]);
+            content.textContent = mon.stats[secondStat];
+        });
+    }
 
     fns.push(() => {
         const content = createClueBlock("Generation");
