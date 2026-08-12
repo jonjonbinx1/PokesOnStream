@@ -579,7 +579,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    document.getElementById("game").classList.remove("hidden");
+    document.body.classList.toggle("local-mode", params.isLocal);
+
+    const gameEl = document.getElementById("game");
+    gameEl.classList.remove("hidden");
+    gameEl.classList.toggle("local-mode", params.isLocal);
+
     syncPersistentLeaderboard();
     requestAnimationFrame(fitGameToViewport);
     window.addEventListener("resize", fitGameToViewport);
