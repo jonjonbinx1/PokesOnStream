@@ -265,6 +265,8 @@ function startLocalCountdown(params, roundId, options = {}) {
 
     if (Number.isFinite(startAt)) {
         const roundLabel = Number.isInteger(roundIndex) ? roundIndex + 1 : null;
+        const outcome = document.getElementById("round-outcome");
+        const preserveOutcomeDuringWait = Boolean(outcome && !outcome.classList.contains("hidden"));
         let lastOverlayValue = null;
 
         const tick = () => {
@@ -281,7 +283,14 @@ function startLocalCountdown(params, roundId, options = {}) {
             const { overlayValue, statusValue } = getLocalCountdownAnnouncement(msUntilStart);
 
             if (overlayValue !== lastOverlayValue) {
-                showCountdownOverlay(overlayValue);
+                const shouldUseOverlay = !preserveOutcomeDuringWait || ["3", "2", "1"].includes(overlayValue);
+
+                if (shouldUseOverlay) {
+                    showCountdownOverlay(overlayValue);
+                } else {
+                    hideCountdownOverlay();
+                }
+
                 setStatus(
                     roundLabel == null
                         ? `Round starts in ${statusValue}`
