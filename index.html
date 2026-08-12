@@ -8,7 +8,7 @@
 </head>
 
 <body>
-  <div id="help" class="hidden">
+  <div id="help">
     <h1>PokesOnStream</h1>
     <p class="help-intro">Open this source with URL parameters to connect it to chat and tune how each round behaves.</p>
 
@@ -82,6 +82,54 @@
 
         <p class="generator-note">Use Twitch usernames for <code>mods</code>, separated by commas. Leave reveal blank to keep the automatic half-round reveal timing. Local mode shows all clues, starts the reveal right away, defaults to a 7 second round, and waits for a click on the result screen before starting the next round unless you override it.</p>
 
+        <section id="local-game-helper" class="local-helper hidden" aria-live="polite">
+          <div class="local-helper-header">
+            <h3>Local game helper</h3>
+            <p>Build a synced local URL for two browsers with a shared seed, a scheduled first round, and a fixed delay between rounds.</p>
+          </div>
+
+          <div class="local-helper-grid">
+            <label class="generator-field">
+              <span>Local session type</span>
+              <select id="local-helper-session-type" name="local-session-type">
+                <option value="standard">Standard local game</option>
+                <option value="synced">Synced local session</option>
+              </select>
+            </label>
+
+            <label class="generator-field">
+              <span>First round schedule</span>
+              <select id="local-helper-start-mode" name="local-start-mode">
+                <option value="seconds">Start in seconds</option>
+                <option value="minutes">Start in minutes</option>
+                <option value="datetime">Start at local date/time</option>
+              </select>
+            </label>
+
+            <label class="generator-field local-helper-input" data-local-helper-mode="seconds">
+              <span>Start in seconds</span>
+              <input id="local-helper-start-seconds" name="local-start-seconds" type="number" min="10" value="10" />
+            </label>
+
+            <label class="generator-field local-helper-input hidden" data-local-helper-mode="minutes">
+              <span>Start in minutes</span>
+              <input id="local-helper-start-minutes" name="local-start-minutes" type="number" min="1" step="1" value="5" />
+            </label>
+
+            <label class="generator-field local-helper-input hidden" data-local-helper-mode="datetime">
+              <span>Start at local date/time</span>
+              <input id="local-helper-start-datetime" name="local-start-datetime" type="datetime-local" />
+            </label>
+
+            <label class="generator-field">
+              <span>Between-round delay (seconds)</span>
+              <input id="local-helper-autostart" name="local-autostart" type="number" min="5" value="5" />
+            </label>
+          </div>
+
+          <p id="local-helper-summary" class="generator-status"></p>
+        </section>
+
         <label class="generator-field generator-output">
           <span>Generated URL</span>
           <textarea id="generated-url" readonly></textarea>
@@ -137,7 +185,7 @@
         <li>Local rounds show every clue immediately and reveal the Pokémon artwork from the first frame.</li>
         <li>If nobody answers in time, the result screen says <code>It's XYZ</code> with the Pokémon's name.</li>
         <li>The generator's <code>Play Local</code> button opens the current settings in local mode without requiring a channel.</li>
-        <li>Use <code>Create Synced Local URL</code> when two players are on a call. Both browsers open the same generated URL, and rounds stay aligned from the shared seed and start time.</li>
+        <li>Use the generator's local game helper plus <code>Create Synced Local URL</code> when two players are on a call. Both browsers open the same generated URL, and rounds stay aligned from the shared seed and start time.</li>
       </ul>
     </section>
 

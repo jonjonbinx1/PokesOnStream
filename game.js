@@ -545,6 +545,97 @@ function getDefaultAutoStartForMode(mode) {
     return mode === "local" ? "0" : "0";
 }
 
+function padTwoDigits(value) {
+    return value.toString().padStart(2, "0");
+}
+
+function toLocalDateTimeValue(timestamp) {
+    const date = new Date(timestamp);
+
+    return `${date.getFullYear()}-${padTwoDigits(date.getMonth() + 1)}-${padTwoDigits(date.getDate())}T${padTwoDigits(date.getHours())}:${padTwoDigits(date.getMinutes())}`;
+}
+
+function getLocalHelperState() {
+    const sessionType = document.getElementById("local-helper-session-type")?.value || "standard";
+    const startMode = document.getElementById("local-helper-start-mode")?.value || "seconds";
+    const secondsValue = parseInt(document.getElementById("local-helper-start-seconds")?.value.trim() || "", 10);
+    const minutesValue = parseInt(document.getElementById("local-helper-start-minutes")?.value.trim() || "", 10);
+    const autoStartValue = parseInt(document.getElementById("local-helper-autostart")?.value.trim() || "", 10);
+    const dateTimeValue = document.getElementById("local-helper-start-datetime")?.value || "";
+    const now = Date.now();
+    let startAt = now + (SYNCED_LOCAL_DEFAULT_START_DELAY_SECONDS * 1000);
+
+    if (startMode === "minutes") {
+        const minutes = Number.isFinite(minutesValue) ? minutesValue : 0;
+        startAt = now + (Math.max(1, minutes) * 60 * 1000);
+    } else if (startMode === "datetime") {
+        const parsedDateTime = Date.parse(dateTimeValue);
+
+        if (Number.isFinite(parsedDateTime)) {
+            startAt = parsedDateTime;
+        }
+    } else {
+        const seconds = Number.isFinite(secondsValue) ? secondsValue : 0;
+        startAt = now + (Math.max(SYNCED_LOCAL_DEFAULT_START_DELAY_SECONDS, seconds) * 1000);
+    }
+
+    startAt = Math.max(startAt, now + (SYNCED_LOCAL_DEFAULT_START_DELAY_SECONDS * 1000));
+
+    return {
+        sessionType,
+        startMode,
+        startAt,
+        autoStart: Math.max(SYNCED_LOCAL_MIN_AUTOSTART_SECONDS, Number.isFinite(autoStartValue) ? autoStartValue : 0)
+    };
+}
+
+function syncLocalHelperInputs() {
+    const startMode = document.getElementById("local-helper-start-mode")?.value || "seconds";
+    const helperInputs = document.querySelectorAll("[data-local-helper-mode]");
+    const dateTimeField = document.getElementById("local-helper-start-datetime");
+
+    helperInputs.forEach(node => {
+        node.classList.toggle("hidden", node.dataset.localHelperMode !== startMode);
+    });
+
+    if (dateTimeField && !dateTimeField.value) {
+        dateTimeField.value = toLocalDateTimeValue(Date.now() + (5 * 60 * 1000));
+    }
+}
+
+function updateLocalHelperVisibility(mode) {
+    const helper = document.getElementById("local-game-helper");
+    if (!helper) return;
+
+    helper.classList.toggle("hidden", mode !== "local");
+}
+
+function updateLocalHelperSummary(mode) {
+    const summary = document.getElementById("local-helper-summary");
+    if (!summary) return;
+
+    if (mode !== "local") {
+        summary.textContent = "";
+        return;
+    }
+
+    const helperState = getLocalHelperState();
+    const startsInSeconds = Math.max(0, Math.ceil((helperState.startAt - Date.now()) / 1000));
+    const startLabel = new Date(helperState.startAt).toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+
+    if (helperState.sessionType !== "synced") {
+        summary.textContent = "Standard local mode uses the normal local URL. Switch to Synced local session to schedule a shared start time.";
+        return;
+    }
+
+    summary.textContent = `Synced local will start in about ${startsInSeconds}s at ${startLabel}. Between rounds it waits ${helperState.autoStart}s before scheduling the next shared round.`;
+}
+
 function appendDebugLog(...args) {
     if (!window.pokeDebugEnabled) return;
 
@@ -626,18 +717,12 @@ function buildOverlayUrlFromForm(modeOverride = null) {
 
 function buildSyncedLocalSessionUrlFromForm() {
     const { url } = buildOverlayUrlFromForm("local");
-    const rawStartDelay = parseInt(document.getElementById("generator-sync")?.value.trim() || "", 10);
-    const startDelaySeconds = Math.max(
-        SYNCED_LOCAL_DEFAULT_START_DELAY_SECONDS,
-        Number.isFinite(rawStartDelay) ? rawStartDelay : 0
-    );
-    const rawAutoStart = parseInt(url.searchParams.get("autostart") || "0", 10);
-    const autoStart = Math.max(rawAutoStart || 0, SYNCED_LOCAL_MIN_AUTOSTART_SECONDS);
+    const helperState = getLocalHelperState();
     const sessionSeed = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
-    url.searchParams.set("autostart", String(autoStart));
+    url.searchParams.set("autostart", String(helperState.autoStart));
     url.searchParams.set("sessionseed", sessionSeed);
-    url.searchParams.set("sessionstart", String(Date.now() + (startDelaySeconds * 1000)));
+    url.searchParams.set("sessionstart", String(helperState.startAt));
 
     return url;
 }
@@ -653,17 +738,28 @@ function updateGeneratedUrl() {
     const { url, channel, mode } = buildOverlayUrlFromForm();
     const { url: localModeUrl } = buildOverlayUrlFromForm("local");
     const generatedUrl = url.toString();
+    const helperState = mode === "local" ? getLocalHelperState() : null;
+    const generatedLocalUrl = helperState?.sessionType === "synced"
+        ? buildSyncedLocalSessionUrlFromForm().toString()
+        : localModeUrl.toString();
 
-    output.value = generatedUrl;
-    openLink.href = generatedUrl;
-    localLink.href = localModeUrl.toString();
-    openLink.textContent = mode === "local" ? "Open Local URL" : "Open URL";
+    output.value = mode === "local" ? generatedLocalUrl : generatedUrl;
+    openLink.href = mode === "local" ? generatedLocalUrl : generatedUrl;
+    localLink.href = generatedLocalUrl;
+    openLink.textContent = "Open URL";
+    localLink.textContent = helperState?.sessionType === "synced" ? "Open Synced Local" : "Play Local";
+    updateLocalHelperVisibility(mode);
+    syncLocalHelperInputs();
+    updateLocalHelperSummary(mode);
 
     if (mode === "local") {
-        status.textContent = "Local URL ready. Use Create Synced Local URL when two players need the same seeded session on a call.";
+        status.textContent = helperState?.sessionType === "synced"
+            ? "Synced local URL ready. Open it in both browsers before the scheduled start time."
+            : "Local URL ready. Switch Local session type to Synced local session when two players need the same seeded session on a call.";
         return;
     }
 
+    localLink.textContent = "Play Local";
     status.textContent = channel
         ? "URL ready to copy into OBS or a browser source."
         : "Add a channel name to create a usable overlay URL, or use Play Local.";
@@ -724,14 +820,17 @@ function setupHelpPageGenerator() {
     const modeField = document.getElementById("generator-mode");
     const totalTimeField = document.getElementById("generator-totaltime");
     const autoStartField = document.getElementById("generator-autostart");
+    const localHelperAutoStartField = document.getElementById("local-helper-autostart");
 
     modeField?.addEventListener("change", () => {
         if (!totalTimeField || !autoStartField) return;
 
-        const previousDefault = modeField.value === "local" ? "45" : "7";
-        const nextDefault = modeField.value === "local" ? "7" : "45";
-        const previousAutoStartDefault = modeField.value === "local" ? "0" : "3";
-        const nextAutoStartDefault = modeField.value === "local" ? "3" : "0";
+        const nextMode = modeField.value || "chat";
+        const previousMode = nextMode === "local" ? "chat" : "local";
+        const previousDefault = getDefaultTotalTimeForMode(previousMode);
+        const nextDefault = getDefaultTotalTimeForMode(nextMode);
+        const previousAutoStartDefault = getDefaultAutoStartForMode(previousMode);
+        const nextAutoStartDefault = getDefaultAutoStartForMode(nextMode);
 
         if (!totalTimeField.value || totalTimeField.value === previousDefault) {
             totalTimeField.value = nextDefault;
@@ -744,8 +843,19 @@ function setupHelpPageGenerator() {
         updateGeneratedUrl();
     });
 
+    localHelperAutoStartField?.addEventListener("input", () => {
+        const helperAutoStart = parseInt(localHelperAutoStartField.value.trim() || "", 10);
+
+        if (autoStartField && Number.isFinite(helperAutoStart)) {
+            autoStartField.value = String(Math.max(SYNCED_LOCAL_MIN_AUTOSTART_SECONDS, helperAutoStart));
+        }
+    });
+
     document.getElementById("copy-generated-url")?.addEventListener("click", copyGeneratedUrl);
     document.getElementById("create-synced-local-url")?.addEventListener("click", createSyncedLocalUrl);
+
+    syncLocalHelperInputs();
+    updateLocalHelperVisibility(modeField?.value || "chat");
 
     updateGeneratedUrl();
 }
@@ -801,6 +911,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     document.body.classList.toggle("local-mode", params.isLocal);
+    document.getElementById("help")?.classList.add("hidden");
 
     const gameEl = document.getElementById("game");
     gameEl.classList.remove("hidden");
