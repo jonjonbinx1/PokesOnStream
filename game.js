@@ -33,7 +33,7 @@ function getParams() {
         totalTime: parseInt(totalTimeParam || (isLocal ? "7" : "45"), 10),
         interval: parseInt(url.searchParams.get("interval") || "5", 10),
         sync: parseInt(syncParam ?? url.searchParams.get("synctime") ?? "0", 10),
-        autoStart: parseInt(autoStartParam ?? (isLocal ? "7" : "0"), 10),
+        autoStart: parseInt(autoStartParam ?? "0", 10),
         mods: modsParam
             .split(",")
             .map(name => normalizeText(name))
@@ -130,6 +130,47 @@ function hideRoundOutcome() {
         outcome.classList.add("hidden");
         outcome.innerHTML = "";
     }
+}
+
+function showCountdownOverlay(value) {
+    const overlay = document.getElementById("countdown-overlay");
+    if (!overlay) return;
+
+    overlay.textContent = String(value);
+    overlay.classList.remove("hidden");
+}
+
+function hideCountdownOverlay() {
+    const overlay = document.getElementById("countdown-overlay");
+    if (!overlay) return;
+
+    overlay.classList.add("hidden");
+    overlay.textContent = "";
+}
+
+function startLocalCountdown(params, roundId) {
+    const countdownValues = ["3", "2", "1"];
+    let index = 0;
+
+    const showNextValue = () => {
+        if (roundId !== gameState.roundId) return;
+
+        const currentValue = countdownValues[index];
+        if (!currentValue) {
+            hideCountdownOverlay();
+            runRound(params, roundId);
+            return;
+        }
+
+        showCountdownOverlay(currentValue);
+        setStatus(`Next round in ${currentValue}`);
+        index += 1;
+
+        const timerId = setTimeout(showNextValue, 700);
+        gameState.timerIds.push(timerId);
+    };
+
+    showNextValue();
 }
 
 function scheduleAutoStart(params) {
@@ -376,7 +417,7 @@ function getDefaultTotalTimeForMode(mode) {
 }
 
 function getDefaultAutoStartForMode(mode) {
-    return mode === "local" ? "3" : "0";
+    return mode === "local" ? "0" : "0";
 }
 
 function appendDebugLog(...args) {
@@ -437,6 +478,13 @@ function buildOverlayUrlFromForm(modeOverride = null) {
 
     url.searchParams.set("clues", clues);
     url.searchParams.set("totaltime", totalTime);
+
+        if (params.isLocal) {
+            const nextHint = document.createElement("div");
+            nextHint.className = "outcome-next-hint";
+            nextHint.textContent = "Click anywhere to show the next Pokemon";
+            outcome.appendChild(nextHint);
+        }
     url.searchParams.set("interval", interval);
     url.searchParams.set("sync", sync);
     url.searchParams.set("autostart", autoStart);
@@ -602,6 +650,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     gameEl.classList.remove("hidden");
     gameEl.classList.toggle("local-mode", params.isLocal);
 
+        document.getElementById("round-outcome")?.addEventListener("click", () => {
+            const outcome = document.getElementById("round-outcome");
+            if (!gameState.params?.isLocal || !outcome || outcome.classList.contains("hidden")) return;
+
+            startRound(gameState.params);
+        });
+
     syncPersistentLeaderboard();
     requestAnimationFrame(fitGameToViewport);
     window.addEventListener("resize", fitGameToViewport);
@@ -681,21 +736,7 @@ function statColor(value) {
     return "#4dff4d";
 }
 
-async function startRound(params) {
-    const roundId = ++gameState.roundId;
-    debugLog("Starting round", { roundId, sync: params.sync, totalTime: params.totalTime });
-    clearRoundTimers();
-    gameState.currentPokemon = null;
-    gameState.guessedCorrectly = false;
-    gameState.roundFinished = false;
-    gameState.winnerName = "";
-
-    setStatus(params.isLocal ? "Local round starting" : `Sync time: ${Math.max(0, params.sync)}s`);
-    hideRoundOutcome();
-
-    const cluesEl = document.getElementById("clues");
-    cluesEl.innerHTML = "";
-
+async function runRound(params, roundId) {
     const randomId = Math.floor(Math.random() * 1025) + 1;
     debugLog("Fetching Pokémon", randomId);
     const mon = await loadPokemonFromAPI(randomId);
@@ -712,8 +753,7 @@ async function startRound(params) {
     gifEl.className = "s-hidden";
     gifEl.style.visibility = "hidden";
     gifCtx.clearRect(0, 0, gifEl.width, gifEl.height);
-    const statusEl = document.getElementById("status");
-    if (statusEl) statusEl.textContent = "Guess the Pokémon";
+    setStatus("Guess the Pokémon");
 
     const clueFns = buildClueFunctions(mon, roundId);
     const maxClues = Math.min(params.clues, clueFns.length);
@@ -767,7 +807,6 @@ async function startRound(params) {
         clueIndex = 1;
     }
 
-    // TIMER INTERVAL (every second)
     const timerTick = setInterval(() => {
         if (roundId !== gameState.roundId) {
             clearInterval(timerTick);
@@ -789,7 +828,6 @@ async function startRound(params) {
         }
     }, 1000);
 
-    // RESOLUTION-BASED REVEAL
     let revealStarted = Boolean(params.isLocal);
 
     if (revealStarted) {
@@ -807,7 +845,6 @@ async function startRound(params) {
             ? 1
             : Math.min(1, Math.max(0, 1 - (remaining / revealWindow)));
 
-        // Start reveal when remaining time <= reveal window
         if (remaining <= revealWindow && !revealStarted) {
             revealStarted = true;
             gifEl.style.visibility = "visible";
@@ -850,6 +887,33 @@ async function startRound(params) {
         gameState.timerIds.push(clueInterval);
     }
     requestAnimationFrame(fitGameToViewport);
+}
+
+async function startRound(params) {
+    const roundId = ++gameState.roundId;
+    debugLog("Starting round", { roundId, sync: params.sync, totalTime: params.totalTime });
+    clearRoundTimers();
+    gameState.currentPokemon = null;
+    gameState.guessedCorrectly = false;
+    gameState.roundFinished = false;
+    gameState.winnerName = "";
+
+    hideCountdownOverlay();
+    setStatus(params.isLocal ? "Get ready" : `Sync time: ${Math.max(0, params.sync)}s`);
+    hideRoundOutcome();
+
+    const cluesEl = document.getElementById("clues");
+    cluesEl.innerHTML = "";
+
+    const timerEl = document.getElementById("timer");
+    timerEl.textContent = formatTime(params.totalTime);
+
+    if (params.isLocal) {
+        startLocalCountdown(params, roundId);
+        return;
+    }
+
+    await runRound(params, roundId);
 }
 
 function loadImage(src) {

@@ -80,7 +80,7 @@
           </label>
         </div>
 
-        <p class="generator-note">Use Twitch usernames for <code>mods</code>, separated by commas. Leave reveal blank to keep the automatic half-round reveal timing. Local mode shows all clues, starts the reveal right away, defaults to a 7 second round, and auto-starts the next round after 3 seconds unless you override it.</p>
+        <p class="generator-note">Use Twitch usernames for <code>mods</code>, separated by commas. Leave reveal blank to keep the automatic half-round reveal timing. Local mode shows all clues, starts the reveal right away, defaults to a 7 second round, and waits for a click on the result screen before starting the next round unless you override it.</p>
 
         <label class="generator-field generator-output">
           <span>Generated URL</span>
@@ -108,7 +108,7 @@
         <li><code>&reveal=7</code> – how many seconds before round end the Pokémon image starts revealing. By default it uses about half the round.</li>
         <li><code>&sync=0</code> – delay before the round really gets going. Useful when you want stream and browser source to line up. Default: <strong>0</strong>.</li>
         <li><code>&synctime=0</code> – legacy alias for <code>sync</code>. Use either one, but <code>sync</code> is preferred.</li>
-        <li><code>&autostart=10</code> – seconds to wait after a round ends before the next one starts automatically. Default: <strong>0</strong> for chat mode and <strong>3</strong> for local mode.</li>
+        <li><code>&autostart=10</code> – seconds to wait after a round ends before the next one starts automatically. Default: <strong>0</strong> for chat mode and <strong>0</strong> for local mode.</li>
         <li><code>&mods=user1,user2</code> – comma-separated Twitch usernames allowed to use the moderator-only round skip command.</li>
         <li><code>&leaderboard=off</code> – disables the leaderboard entirely. Default: <strong>off</strong>.</li>
         <li><code>&leaderboard=popup</code> – shows a session leaderboard in the end-of-round popup.</li>
@@ -149,6 +149,7 @@
   <div id="game" class="hidden">
     <div id="title">PokesOnStream</div>
     <div id="status"></div>
+    <div id="countdown-overlay" class="hidden" aria-live="assertive" aria-atomic="true"></div>
     <div id="clues"></div>
     <div id="leaderboard-panel" class="hidden" aria-live="polite" aria-atomic="true"></div>
 
