@@ -248,8 +248,9 @@ body {
 #game.local-mode #clues {
   grid-column: 1;
   grid-row: 4;
-  width: min(100%, 720px);
-  grid-template-columns: 1fr;
+  width: min(100%, 620px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 12px;
   align-content: stretch;
   align-items: stretch;
@@ -597,9 +598,26 @@ body {
 
 #game.local-mode .clue-section {
   width: 100%;
-  min-height: 168px;
-  padding: 12px 14px;
+  min-height: 150px;
+  padding: 12px;
   background: linear-gradient(180deg, rgba(42, 117, 187, 0.9), rgba(60, 90, 166, 0.88));
+}
+
+#game.local-mode .clue-section h2 {
+  font-size: clamp(24px, 3.8vw, 34px);
+  margin-bottom: 6px;
+}
+
+#game.local-mode .clue-section span,
+#game.local-mode .clue-content {
+  font-size: clamp(24px, 3.9vw, 32px);
+  line-height: 1.16;
+}
+
+#game.local-mode .clue-content span,
+#game.local-mode .clue-content div,
+#game.local-mode .clue-content p {
+  font-size: clamp(24px, 3.9vw, 32px);
 }
 
 /* Invisible at start */
@@ -646,6 +664,7 @@ body {
   }
 
   #game.local-mode #clues {
+    width: min(100%, 580px);
     gap: 14px;
   }
 
@@ -693,20 +712,38 @@ body {
   }
 
   #game.local-mode #clues {
-    grid-template-columns: 1fr;
+    width: min(100%, 520px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     min-height: auto;
-    gap: 12px;
+    gap: 10px;
   }
 
   #game.local-mode #silhouette {
-    width: min(74vw, 320px);
-    height: min(74vw, 320px);
+    width: min(66vw, 280px);
+    height: min(66vw, 280px);
     justify-content: center;
   }
 
   #game.local-mode #poke-gif {
-    width: min(68vw, 280px);
-    height: min(68vw, 280px);
+    width: min(58vw, 230px);
+    height: min(58vw, 230px);
+  }
+
+  #game.local-mode .clue-section {
+    min-height: 128px;
+    padding: 10px;
+  }
+
+  #game.local-mode .clue-section h2 {
+    font-size: clamp(20px, 4vw, 28px);
+  }
+
+  #game.local-mode .clue-section span,
+  #game.local-mode .clue-content,
+  #game.local-mode .clue-content span,
+  #game.local-mode .clue-content div,
+  #game.local-mode .clue-content p {
+    font-size: clamp(18px, 3.6vw, 24px);
   }
 }
 
@@ -735,6 +772,6 @@ body {
   }
 
   #game.local-mode #clues {
-    width: min(100%, 560px);
+    width: min(100%, 520px);
   }
 }
