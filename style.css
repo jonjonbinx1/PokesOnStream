@@ -281,7 +281,7 @@ body {
 #countdown-overlay {
   position: fixed;
   inset: 0;
-  z-index: 15000;
+  z-index: 25000;
   display: flex;
   align-items: center;
   justify-content: center;

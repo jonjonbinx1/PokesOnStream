@@ -267,6 +267,7 @@ function startLocalCountdown(params, roundId, options = {}) {
         const roundLabel = Number.isInteger(roundIndex) ? roundIndex + 1 : null;
         const outcome = document.getElementById("round-outcome");
         const preserveOutcomeDuringWait = Boolean(outcome && !outcome.classList.contains("hidden"));
+        const useExtendedMilestones = !preserveOutcomeDuringWait;
         let lastOverlayValue = null;
 
         const tick = () => {
@@ -280,10 +281,15 @@ function startLocalCountdown(params, roundId, options = {}) {
                 return;
             }
 
-            const { overlayValue, statusValue } = getLocalCountdownAnnouncement(msUntilStart);
+            const { overlayValue, statusValue } = useExtendedMilestones
+                ? getLocalCountdownAnnouncement(msUntilStart)
+                : {
+                    overlayValue: String(Math.max(1, Math.ceil(msUntilStart / 1000))),
+                    statusValue: `${Math.max(1, Math.ceil(msUntilStart / 1000))} second${Math.ceil(msUntilStart / 1000) === 1 ? "" : "s"}`
+                };
 
             if (overlayValue !== lastOverlayValue) {
-                const shouldUseOverlay = !preserveOutcomeDuringWait || ["3", "2", "1"].includes(overlayValue);
+                const shouldUseOverlay = useExtendedMilestones || ["3", "2", "1"].includes(overlayValue);
 
                 if (shouldUseOverlay) {
                     showCountdownOverlay(overlayValue);
@@ -291,11 +297,14 @@ function startLocalCountdown(params, roundId, options = {}) {
                     hideCountdownOverlay();
                 }
 
-                setStatus(
-                    roundLabel == null
-                        ? `Round starts in ${statusValue}`
-                        : `Synced round ${roundLabel} starts in ${statusValue}`
-                );
+                if (useExtendedMilestones || ["3", "2", "1"].includes(overlayValue)) {
+                    setStatus(
+                        roundLabel == null
+                            ? `Round starts in ${statusValue}`
+                            : `Synced round ${roundLabel} starts in ${statusValue}`
+                    );
+                }
+
                 lastOverlayValue = overlayValue;
             }
 
@@ -1232,6 +1241,8 @@ async function runRound(params, roundId, options = {}) {
 async function startRound(params, options = {}) {
     const { startAt = null, roundIndex = null } = options;
     const roundId = ++gameState.roundId;
+    const outcome = document.getElementById("round-outcome");
+    const preserveOutcomeDuringWait = Boolean(params.isLocal && Number.isFinite(startAt) && outcome && !outcome.classList.contains("hidden"));
     debugLog("Starting round", { roundId, sync: params.sync, totalTime: params.totalTime, startAt, roundIndex });
     clearRoundTimers();
     gameState.currentPokemon = null;
@@ -1244,7 +1255,9 @@ async function startRound(params, options = {}) {
     }
 
     hideCountdownOverlay();
-    setStatus(params.isLocal ? "Get ready" : `Sync time: ${Math.max(0, params.sync)}s`);
+    if (!preserveOutcomeDuringWait) {
+        setStatus(params.isLocal ? "Get ready" : `Sync time: ${Math.max(0, params.sync)}s`);
+    }
     clearPokemonDisplay();
 
     if (!params.isLocal) {
