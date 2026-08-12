@@ -89,6 +89,7 @@
 
         <div class="generator-actions">
           <button id="copy-generated-url" type="button">Copy URL</button>
+          <button id="create-synced-local-url" type="button">Create Synced Local URL</button>
           <a id="open-generated-url" href="#" target="_blank" rel="noopener noreferrer">Open URL</a>
           <a id="play-local-url" href="#">Play Local</a>
         </div>
@@ -109,6 +110,7 @@
         <li><code>&sync=0</code> – delay before the round really gets going. Useful when you want stream and browser source to line up. Default: <strong>0</strong>.</li>
         <li><code>&synctime=0</code> – legacy alias for <code>sync</code>. Use either one, but <code>sync</code> is preferred.</li>
         <li><code>&autostart=10</code> – seconds to wait after a round ends before the next one starts automatically. Default: <strong>0</strong> for chat mode and <strong>0</strong> for local mode.</li>
+        <li><code>&sessionseed=abc123</code> plus <code>&sessionstart=1723500000000</code> – advanced local multiplayer session values. The generator creates these for you when you use <code>Create Synced Local URL</code>.</li>
         <li><code>&mods=user1,user2</code> – comma-separated Twitch usernames allowed to use the moderator-only round skip command.</li>
         <li><code>&leaderboard=off</code> – disables the leaderboard entirely. Default: <strong>off</strong>.</li>
         <li><code>&leaderboard=popup</code> – shows a session leaderboard in the end-of-round popup.</li>
@@ -135,6 +137,7 @@
         <li>Local rounds show every clue immediately and reveal the Pokémon artwork from the first frame.</li>
         <li>If nobody answers in time, the result screen says <code>It's XYZ</code> with the Pokémon's name.</li>
         <li>The generator's <code>Play Local</code> button opens the current settings in local mode without requiring a channel.</li>
+        <li>Use <code>Create Synced Local URL</code> when two players are on a call. Both browsers open the same generated URL, and rounds stay aligned from the shared seed and start time.</li>
       </ul>
     </section>
 

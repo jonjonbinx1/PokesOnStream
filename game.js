@@ -1,3 +1,7 @@
+const SYNCED_LOCAL_COUNTDOWN_SECONDS = 3;
+const SYNCED_LOCAL_MIN_AUTOSTART_SECONDS = 5;
+const SYNCED_LOCAL_DEFAULT_START_DELAY_SECONDS = 10;
+
 function getParams() {
     const url = new URL(window.location.href);
     const modeParam = (url.searchParams.get("mode") || "").trim().toLowerCase();
@@ -10,6 +14,11 @@ function getParams() {
     const debugParam = url.searchParams.get("debug");
     const isLocal = modeParam === "local";
     const totalTimeParam = url.searchParams.get("totaltime");
+    const sessionSeed = (url.searchParams.get("sessionseed") || "").trim();
+    const parsedSessionStartAt = parseInt(url.searchParams.get("sessionstart") || "", 10);
+    const sessionStartAt = Number.isFinite(parsedSessionStartAt) ? parsedSessionStartAt : null;
+    const parsedAutoStart = parseInt(autoStartParam ?? "0", 10);
+    const isSyncedLocal = isLocal && Boolean(sessionSeed) && Number.isFinite(sessionStartAt);
 
     const normalizedLeaderboardValue = (leaderboardParam || "").trim().toLowerCase();
     const normalizedLeaderboardMode = (leaderboardModeParam || "").trim().toLowerCase();
@@ -33,7 +42,9 @@ function getParams() {
         totalTime: parseInt(totalTimeParam || (isLocal ? "7" : "45"), 10),
         interval: parseInt(url.searchParams.get("interval") || "5", 10),
         sync: parseInt(syncParam ?? url.searchParams.get("synctime") ?? "0", 10),
-        autoStart: parseInt(autoStartParam ?? "0", 10),
+        autoStart: isSyncedLocal
+            ? Math.max(parsedAutoStart || 0, SYNCED_LOCAL_MIN_AUTOSTART_SECONDS)
+            : parsedAutoStart,
         mods: modsParam
             .split(",")
             .map(name => normalizeText(name))
@@ -41,7 +52,10 @@ function getParams() {
         debug: debugParam === "true",
         leaderboard: leaderboardMode !== "off",
         leaderboardMode,
-        reveal: revealParam === null ? null : parseInt(revealParam, 10)
+        reveal: revealParam === null ? null : parseInt(revealParam, 10),
+        isSyncedLocal,
+        sessionSeed,
+        sessionStartAt
     };
 }
 
@@ -54,6 +68,7 @@ const gameState = {
     winnerName: "",
     sessionScores: {},
     roundStartedAt: 0,
+    syncedLocalRoundIndex: -1,
     autoStartTimerId: null,
     timerIds: []
 };
@@ -65,6 +80,71 @@ function clearRoundTimers() {
         clearTimeout(gameState.autoStartTimerId);
         gameState.autoStartTimerId = null;
     }
+}
+
+function isSyncedLocalMode(params = gameState.params) {
+    return Boolean(params?.isSyncedLocal);
+}
+
+function xmur3(value) {
+    let hash = 1779033703 ^ value.length;
+
+    for (let index = 0; index < value.length; index += 1) {
+        hash = Math.imul(hash ^ value.charCodeAt(index), 3432918353);
+        hash = (hash << 13) | (hash >>> 19);
+    }
+
+    return () => {
+        hash = Math.imul(hash ^ (hash >>> 16), 2246822507);
+        hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
+        hash ^= hash >>> 16;
+        return hash >>> 0;
+    };
+}
+
+function mulberry32(seed) {
+    return () => {
+        let value = seed += 0x6D2B79F5;
+        value = Math.imul(value ^ (value >>> 15), value | 1);
+        value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+        return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function createSeededRandom(seedText) {
+    const hashSeed = xmur3(seedText);
+    return mulberry32(hashSeed());
+}
+
+function getRandomIntInclusive(rng, min, max) {
+    return Math.floor(rng() * ((max - min) + 1)) + min;
+}
+
+function getSyncedLocalRoundSeed(params, roundIndex) {
+    return `${params.sessionSeed}:${roundIndex}`;
+}
+
+function getSyncedLocalRoundStartAt(params, roundIndex) {
+    const cycleMs = (params.totalTime + params.autoStart) * 1000;
+    return params.sessionStartAt + (roundIndex * cycleMs);
+}
+
+function scheduleSyncedLocalRound(params, roundIndex) {
+    const startAt = getSyncedLocalRoundStartAt(params, roundIndex);
+    const countdownLeadMs = SYNCED_LOCAL_COUNTDOWN_SECONDS * 1000;
+    const delayMs = Math.max(0, startAt - Date.now() - countdownLeadMs);
+
+    if (gameState.autoStartTimerId) {
+        clearTimeout(gameState.autoStartTimerId);
+    }
+
+    gameState.autoStartTimerId = setTimeout(() => {
+        gameState.autoStartTimerId = null;
+        startRound(params, { startAt, roundIndex });
+    }, delayMs);
+
+    const secondsUntilStart = Math.max(0, Math.ceil((startAt - Date.now()) / 1000));
+    setStatus(`Synced round ${roundIndex + 1} starts in ${secondsUntilStart}s`);
 }
 
 function fitGameToViewport() {
@@ -148,7 +228,38 @@ function hideCountdownOverlay() {
     overlay.textContent = "";
 }
 
-function startLocalCountdown(params, roundId) {
+function startLocalCountdown(params, roundId, options = {}) {
+    const { startAt = null, roundIndex = null } = options;
+
+    if (Number.isFinite(startAt)) {
+        const roundLabel = Number.isInteger(roundIndex) ? roundIndex + 1 : null;
+
+        const tick = () => {
+            if (roundId !== gameState.roundId) return;
+
+            const msUntilStart = startAt - Date.now();
+            if (msUntilStart <= 0) {
+                hideCountdownOverlay();
+                runRound(params, roundId, { roundIndex, startAt });
+                return;
+            }
+
+            const secondsRemaining = Math.max(1, Math.ceil(msUntilStart / 1000));
+            showCountdownOverlay(secondsRemaining);
+            setStatus(
+                roundLabel == null
+                    ? `Round starts in ${secondsRemaining}`
+                    : `Synced round ${roundLabel} starts in ${secondsRemaining}`
+            );
+
+            const timerId = setTimeout(tick, 100);
+            gameState.timerIds.push(timerId);
+        };
+
+        tick();
+        return;
+    }
+
     const countdownValues = ["3", "2", "1"];
     let index = 0;
 
@@ -174,6 +285,8 @@ function startLocalCountdown(params, roundId) {
 }
 
 function scheduleAutoStart(params) {
+    if (isSyncedLocalMode(params)) return;
+
     const delaySeconds = Math.max(0, params.autoStart || 0);
     if (!delaySeconds) return;
 
@@ -400,6 +513,18 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
         outcome.appendChild(createLeaderboardCard("outcome-leaderboard"));
     }
 
+    if (params.isLocal && !isSyncedLocalMode(params)) {
+        const nextHint = document.createElement("div");
+        nextHint.className = "outcome-next-hint";
+        nextHint.textContent = "Click anywhere to show the next Pokemon";
+        outcome.appendChild(nextHint);
+    }
+
+    if (isSyncedLocalMode(params)) {
+        scheduleSyncedLocalRound(params, gameState.syncedLocalRoundIndex + 1);
+        return;
+    }
+
     scheduleAutoStart(gameState.params || {});
 }
 
@@ -478,13 +603,6 @@ function buildOverlayUrlFromForm(modeOverride = null) {
 
     url.searchParams.set("clues", clues);
     url.searchParams.set("totaltime", totalTime);
-
-        if (params.isLocal) {
-            const nextHint = document.createElement("div");
-            nextHint.className = "outcome-next-hint";
-            nextHint.textContent = "Click anywhere to show the next Pokemon";
-            outcome.appendChild(nextHint);
-        }
     url.searchParams.set("interval", interval);
     url.searchParams.set("sync", sync);
     url.searchParams.set("autostart", autoStart);
@@ -506,6 +624,24 @@ function buildOverlayUrlFromForm(modeOverride = null) {
     return { url, channel, mode };
 }
 
+function buildSyncedLocalSessionUrlFromForm() {
+    const { url } = buildOverlayUrlFromForm("local");
+    const rawStartDelay = parseInt(document.getElementById("generator-sync")?.value.trim() || "", 10);
+    const startDelaySeconds = Math.max(
+        SYNCED_LOCAL_DEFAULT_START_DELAY_SECONDS,
+        Number.isFinite(rawStartDelay) ? rawStartDelay : 0
+    );
+    const rawAutoStart = parseInt(url.searchParams.get("autostart") || "0", 10);
+    const autoStart = Math.max(rawAutoStart || 0, SYNCED_LOCAL_MIN_AUTOSTART_SECONDS);
+    const sessionSeed = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+
+    url.searchParams.set("autostart", String(autoStart));
+    url.searchParams.set("sessionseed", sessionSeed);
+    url.searchParams.set("sessionstart", String(Date.now() + (startDelaySeconds * 1000)));
+
+    return url;
+}
+
 function updateGeneratedUrl() {
     const output = document.getElementById("generated-url");
     const openLink = document.getElementById("open-generated-url");
@@ -524,7 +660,7 @@ function updateGeneratedUrl() {
     openLink.textContent = mode === "local" ? "Open Local URL" : "Open URL";
 
     if (mode === "local") {
-        status.textContent = "Local URL ready to open side-by-side or copy into a browser source.";
+        status.textContent = "Local URL ready. Use Create Synced Local URL when two players need the same seeded session on a call.";
         return;
     }
 
@@ -546,6 +682,25 @@ async function copyGeneratedUrl() {
         output.focus();
         output.select();
         status.textContent = "Copy failed. The URL is selected so you can copy it manually.";
+    }
+}
+
+async function createSyncedLocalUrl() {
+    const output = document.getElementById("generated-url");
+    const status = document.getElementById("generator-status");
+
+    if (!output || !status) return;
+
+    const syncedUrl = buildSyncedLocalSessionUrlFromForm().toString();
+    output.value = syncedUrl;
+
+    try {
+        await navigator.clipboard.writeText(syncedUrl);
+        status.textContent = "Synced local URL copied. Open it in both browsers before the countdown ends.";
+    } catch {
+        output.focus();
+        output.select();
+        status.textContent = "Synced local URL selected. Copy it manually and open it in both browsers before the countdown ends.";
     }
 }
 
@@ -590,6 +745,7 @@ function setupHelpPageGenerator() {
     });
 
     document.getElementById("copy-generated-url")?.addEventListener("click", copyGeneratedUrl);
+    document.getElementById("create-synced-local-url")?.addEventListener("click", createSyncedLocalUrl);
 
     updateGeneratedUrl();
 }
@@ -652,7 +808,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         document.getElementById("round-outcome")?.addEventListener("click", () => {
             const outcome = document.getElementById("round-outcome");
-            if (!gameState.params?.isLocal || !outcome || outcome.classList.contains("hidden")) return;
+            if (!gameState.params?.isLocal || isSyncedLocalMode(gameState.params) || !outcome || outcome.classList.contains("hidden")) return;
 
             startRound(gameState.params);
         });
@@ -661,7 +817,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     requestAnimationFrame(fitGameToViewport);
     window.addEventListener("resize", fitGameToViewport);
 
-    startRound(params);
+    if (isSyncedLocalMode(params)) {
+        if (Date.now() >= params.sessionStartAt) {
+            setStatus("This synced local session already started. Create a new synced local URL.");
+        } else {
+            scheduleSyncedLocalRound(params, 0);
+        }
+    } else {
+        startRound(params);
+    }
+
     if (!params.isLocal && params.channel) {
         startChatClient(params.channel);
     }
@@ -736,15 +901,21 @@ function statColor(value) {
     return "#4dff4d";
 }
 
-async function runRound(params, roundId) {
-    const randomId = Math.floor(Math.random() * 1025) + 1;
+async function runRound(params, roundId, options = {}) {
+    const { roundIndex = null, startAt = null } = options;
+    const syncedRng = isSyncedLocalMode(params) && Number.isInteger(roundIndex)
+        ? createSeededRandom(getSyncedLocalRoundSeed(params, roundIndex))
+        : null;
+    const randomId = syncedRng
+        ? getRandomIntInclusive(syncedRng, 1, 1025)
+        : Math.floor(Math.random() * 1025) + 1;
     debugLog("Fetching Pokémon", randomId);
     const mon = await loadPokemonFromAPI(randomId);
 
     if (roundId !== gameState.roundId) return;
 
     gameState.currentPokemon = mon;
-    gameState.roundStartedAt = Date.now();
+    gameState.roundStartedAt = Number.isFinite(startAt) ? startAt : Date.now();
     debugLog("Loaded Pokémon", mon.name);
 
     const gifEl = document.getElementById("poke-gif");
@@ -755,7 +926,7 @@ async function runRound(params, roundId) {
     gifCtx.clearRect(0, 0, gifEl.width, gifEl.height);
     setStatus("Guess the Pokémon");
 
-    const clueFns = buildClueFunctions(mon, roundId);
+    const clueFns = buildClueFunctions(mon, roundId, syncedRng || Math.random);
     const maxClues = Math.min(params.clues, clueFns.length);
     const revealWindow = Number.isFinite(params.reveal)
         ? params.reveal
@@ -889,14 +1060,19 @@ async function runRound(params, roundId) {
     requestAnimationFrame(fitGameToViewport);
 }
 
-async function startRound(params) {
+async function startRound(params, options = {}) {
+    const { startAt = null, roundIndex = null } = options;
     const roundId = ++gameState.roundId;
-    debugLog("Starting round", { roundId, sync: params.sync, totalTime: params.totalTime });
+    debugLog("Starting round", { roundId, sync: params.sync, totalTime: params.totalTime, startAt, roundIndex });
     clearRoundTimers();
     gameState.currentPokemon = null;
     gameState.guessedCorrectly = false;
     gameState.roundFinished = false;
     gameState.winnerName = "";
+
+    if (Number.isInteger(roundIndex)) {
+        gameState.syncedLocalRoundIndex = roundIndex;
+    }
 
     hideCountdownOverlay();
     setStatus(params.isLocal ? "Get ready" : `Sync time: ${Math.max(0, params.sync)}s`);
@@ -909,7 +1085,7 @@ async function startRound(params) {
     timerEl.textContent = formatTime(params.totalTime);
 
     if (params.isLocal) {
-        startLocalCountdown(params, roundId);
+        startLocalCountdown(params, roundId, { startAt, roundIndex });
         return;
     }
 
@@ -926,7 +1102,7 @@ function loadImage(src) {
     });
 }
 
-function buildClueFunctions(mon, roundId) {
+function buildClueFunctions(mon, roundId, rng = Math.random) {
     const fns = [];
     const isLocal = Boolean(gameState.params?.isLocal);
     const compactStatOrder = ["hp", "attack", "defense", "special-attack", "special-defense", "speed"];
@@ -938,7 +1114,7 @@ function buildClueFunctions(mon, roundId) {
         "special-defense": "Sp. Defense",
         speed: "Speed"
     };
-    const localStatClues = shuffleArray(compactStatOrder.slice()).slice(0, 2);
+    const localStatClues = shuffleArray(compactStatOrder.slice(), rng).slice(0, 2);
 
     fns.push(() => {
         const content = createClueBlock("Type");
@@ -1025,12 +1201,12 @@ function buildClueFunctions(mon, roundId) {
         });
     });
 
-    return shuffleArray(fns);
+    return shuffleArray(fns, rng);
 }
 
-function shuffleArray(arr) {
+function shuffleArray(arr, rng = Math.random) {
     for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(rng() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
