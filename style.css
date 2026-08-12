@@ -209,10 +209,14 @@ body {
   grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 12px;
   padding: 18px;
+  justify-items: center;
+  align-content: start;
+  overflow-y: auto;
 }
 
 #title {
   grid-column: 1 / -1;
+  grid-row: 1;
   font-family: "Pokemon", sans-serif;
   font-size: clamp(28px, 3vw, 42px);
   color: #ffcb05;
@@ -224,6 +228,7 @@ body {
 
 #status {
   grid-column: 1 / -1;
+  grid-row: 2;
   font-size: clamp(18px, 1.8vw, 26px);
   line-height: 1.1;
   text-align: center;
@@ -243,12 +248,13 @@ body {
 #game.local-mode #clues {
   grid-column: 1;
   grid-row: 4;
-  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  width: min(100%, 720px);
+  grid-template-columns: 1fr;
   gap: 12px;
   align-content: stretch;
   align-items: stretch;
-  min-height: min(78vh, 980px);
-  padding: 12px;
+  min-height: auto;
+  padding: 0;
 }
 
 #debug-log {
@@ -570,11 +576,11 @@ body {
   transform: none;
   grid-column: 1;
   grid-row: 3;
-  width: min(48vw, 520px);
-  height: min(48vw, 520px);
+  width: min(62vw, 420px);
+  height: min(62vw, 420px);
   justify-self: center;
   pointer-events: none;
-  align-self: end;
+  align-self: start;
 }
 
 #poke-gif {
@@ -584,12 +590,13 @@ body {
 }
 
 #game.local-mode #poke-gif {
-  width: min(42vw, 460px);
-  height: min(42vw, 460px);
+  width: min(56vw, 360px);
+  height: min(56vw, 360px);
   filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.5));
 }
 
 #game.local-mode .clue-section {
+  width: 100%;
   min-height: 168px;
   padding: 12px 14px;
   background: linear-gradient(180deg, rgba(42, 117, 187, 0.9), rgba(60, 90, 166, 0.88));
@@ -640,18 +647,16 @@ body {
 
   #game.local-mode #clues {
     gap: 14px;
-    padding: 18px;
   }
 
   #game.local-mode #silhouette {
-    width: min(52vw, 420px);
-    height: min(52vw, 420px);
-    transform: translate(-50%, -48%);
+    width: min(56vw, 380px);
+    height: min(56vw, 380px);
   }
 
   #game.local-mode #poke-gif {
-    width: min(48vw, 380px);
-    height: min(48vw, 380px);
+    width: min(50vw, 320px);
+    height: min(50vw, 320px);
   }
 
 }
@@ -690,18 +695,46 @@ body {
   #game.local-mode #clues {
     grid-template-columns: 1fr;
     min-height: auto;
-    padding: 8px 0 0;
     gap: 12px;
   }
 
   #game.local-mode #silhouette {
-    width: min(70vw, 320px);
-    height: min(70vw, 320px);
+    width: min(74vw, 320px);
+    height: min(74vw, 320px);
     justify-content: center;
   }
 
   #game.local-mode #poke-gif {
-    width: min(66vw, 280px);
-    height: min(66vw, 280px);
+    width: min(68vw, 280px);
+    height: min(68vw, 280px);
+  }
+}
+
+@media (orientation: portrait) {
+  #game.local-mode {
+    padding: 14px 14px 22px;
+    gap: 10px;
+  }
+
+  #title {
+    font-size: clamp(30px, 6vw, 42px);
+  }
+
+  #status {
+    font-size: clamp(18px, 4.4vw, 26px);
+  }
+
+  #game.local-mode #silhouette {
+    width: min(78vw, 380px);
+    height: min(78vw, 380px);
+  }
+
+  #game.local-mode #poke-gif {
+    width: min(72vw, 320px);
+    height: min(72vw, 320px);
+  }
+
+  #game.local-mode #clues {
+    width: min(100%, 560px);
   }
 }
