@@ -607,7 +607,15 @@ function updateLocalHelperVisibility(mode) {
     const helper = document.getElementById("local-game-helper");
     if (!helper) return;
 
-    helper.classList.toggle("hidden", mode !== "local");
+    const helperFields = helper.querySelectorAll("input, select");
+    const isLocal = mode === "local";
+
+    helper.classList.toggle("inactive", !isLocal);
+
+    helperFields.forEach(field => {
+        if (field.id === "local-helper-session-type") return;
+        field.disabled = !isLocal;
+    });
 }
 
 function updateLocalHelperSummary(mode) {
@@ -615,7 +623,7 @@ function updateLocalHelperSummary(mode) {
     if (!summary) return;
 
     if (mode !== "local") {
-        summary.textContent = "";
+        summary.textContent = "Switch Mode to Local side-by-side to schedule a synced start time. Then choose Synced local session to set when the first round begins.";
         return;
     }
 

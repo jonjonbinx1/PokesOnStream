@@ -136,6 +136,15 @@ body {
   border: 1px solid rgba(255, 203, 5, 0.22);
 }
 
+.local-helper.inactive {
+  opacity: 0.78;
+}
+
+.local-helper.inactive .generator-field input,
+.local-helper.inactive .generator-field select {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .local-helper-header {
   display: grid;
   gap: 4px;
