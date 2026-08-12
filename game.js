@@ -33,7 +33,7 @@ function getParams() {
         totalTime: parseInt(totalTimeParam || (isLocal ? "7" : "45"), 10),
         interval: parseInt(url.searchParams.get("interval") || "5", 10),
         sync: parseInt(syncParam ?? url.searchParams.get("synctime") ?? "0", 10),
-        autoStart: parseInt(autoStartParam ?? "0", 10),
+        autoStart: parseInt(autoStartParam ?? (isLocal ? "7" : "0"), 10),
         mods: modsParam
             .split(",")
             .map(name => normalizeText(name))
@@ -375,6 +375,10 @@ function getDefaultTotalTimeForMode(mode) {
     return mode === "local" ? "7" : "45";
 }
 
+function getDefaultAutoStartForMode(mode) {
+    return mode === "local" ? "3" : "0";
+}
+
 function appendDebugLog(...args) {
     if (!window.pokeDebugEnabled) return;
 
@@ -405,7 +409,8 @@ function buildOverlayUrlFromForm(modeOverride = null) {
     const interval = document.getElementById("generator-interval")?.value.trim() || "5";
     const reveal = document.getElementById("generator-reveal")?.value.trim() || "";
     const sync = document.getElementById("generator-sync")?.value.trim() || "0";
-    const autoStart = document.getElementById("generator-autostart")?.value.trim() || "0";
+    const autoStartField = document.getElementById("generator-autostart");
+    const rawAutoStart = autoStartField?.value.trim() || "";
     const mods = document.getElementById("generator-mods")?.value.trim() || "";
     const debug = document.getElementById("generator-debug")?.checked;
     const leaderboardMode = document.getElementById("generator-leaderboard")?.value || "off";
@@ -414,6 +419,11 @@ function buildOverlayUrlFromForm(modeOverride = null) {
             ? getDefaultTotalTimeForMode(mode)
             : rawTotalTime
         : getDefaultTotalTimeForMode(mode);
+    const autoStart = rawAutoStart
+        ? modeOverride && selectedMode !== modeOverride && rawAutoStart === getDefaultAutoStartForMode(selectedMode)
+            ? getDefaultAutoStartForMode(mode)
+            : rawAutoStart
+        : getDefaultAutoStartForMode(mode);
 
     const url = new URL("https://jonjonbinx1.github.io/PokesOnStream/");
 
@@ -510,15 +520,22 @@ function setupHelpPageGenerator() {
 
     const modeField = document.getElementById("generator-mode");
     const totalTimeField = document.getElementById("generator-totaltime");
+    const autoStartField = document.getElementById("generator-autostart");
 
     modeField?.addEventListener("change", () => {
-        if (!totalTimeField) return;
+        if (!totalTimeField || !autoStartField) return;
 
         const previousDefault = modeField.value === "local" ? "45" : "7";
         const nextDefault = modeField.value === "local" ? "7" : "45";
+        const previousAutoStartDefault = modeField.value === "local" ? "0" : "3";
+        const nextAutoStartDefault = modeField.value === "local" ? "3" : "0";
 
         if (!totalTimeField.value || totalTimeField.value === previousDefault) {
             totalTimeField.value = nextDefault;
+        }
+
+        if (!autoStartField.value || autoStartField.value === previousAutoStartDefault) {
+            autoStartField.value = nextAutoStartDefault;
         }
 
         updateGeneratedUrl();
