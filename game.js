@@ -1,5 +1,6 @@
 function getParams() {
     const url = new URL(window.location.href);
+    const modeParam = (url.searchParams.get("mode") || "").trim().toLowerCase();
     const revealParam = url.searchParams.get("reveal");
     const syncParam = url.searchParams.get("sync");
     const autoStartParam = url.searchParams.get("autostart");
@@ -7,6 +8,8 @@ function getParams() {
     const leaderboardModeParam = url.searchParams.get("leaderboardmode");
     const modsParam = url.searchParams.get("mods") || "";
     const debugParam = url.searchParams.get("debug");
+    const isLocal = modeParam === "local";
+    const totalTimeParam = url.searchParams.get("totaltime");
 
     const normalizedLeaderboardValue = (leaderboardParam || "").trim().toLowerCase();
     const normalizedLeaderboardMode = (leaderboardModeParam || "").trim().toLowerCase();
@@ -23,9 +26,11 @@ function getParams() {
     }
 
     return {
+        mode: isLocal ? "local" : "chat",
+        isLocal,
         channel: url.searchParams.get("channel"),
         clues: parseInt(url.searchParams.get("clues") || "6", 10),
-        totalTime: parseInt(url.searchParams.get("totaltime") || "45", 10),
+        totalTime: parseInt(totalTimeParam || (isLocal ? "7" : "45"), 10),
         interval: parseInt(url.searchParams.get("interval") || "5", 10),
         sync: parseInt(syncParam ?? url.searchParams.get("synctime") ?? "0", 10),
         autoStart: parseInt(autoStartParam ?? "0", 10),
@@ -176,6 +181,14 @@ function formatSolveTime(milliseconds) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}.${tenths}`;
 }
 
+function formatPokemonDisplayName(name) {
+    return (name || "the Pokemon")
+        .split(/[-\s]+/)
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+}
+
 function getLeaderboardEntries() {
     return Object.entries(gameState.sessionScores)
         .sort((left, right) => {
@@ -293,6 +306,8 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
     const outcome = document.getElementById("round-outcome");
     if (!outcome) return;
 
+    const params = gameState.params || {};
+
     outcome.innerHTML = "";
     outcome.classList.remove("hidden");
 
@@ -308,7 +323,9 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
         title.textContent = `Congratulations ${winnerName}!`;
         createConfetti();
     } else {
-        title.textContent = "Better luck next time";
+        title.textContent = params.isLocal && pokemon
+            ? `It's ${formatPokemonDisplayName(pokemon.name)}`
+            : "Better luck next time";
     }
 
     outcome.appendChild(title);
@@ -330,10 +347,12 @@ function showRoundOutcome({ win, winnerName = "", pokemon = null }) {
         img.alt = pokemon.name;
         outcome.appendChild(img);
 
-        const subtitle = document.createElement("div");
-        subtitle.className = "outcome-subtitle";
-        subtitle.textContent = pokemon.name;
-        outcome.appendChild(subtitle);
+        if (!params.isLocal) {
+            const subtitle = document.createElement("div");
+            subtitle.className = "outcome-subtitle";
+            subtitle.textContent = pokemon.name;
+            outcome.appendChild(subtitle);
+        }
     }
 
     if (gameState.params?.leaderboard && gameState.params?.leaderboardMode !== "always") {
@@ -350,6 +369,10 @@ function formatDebugValue(value) {
     } catch {
         return String(value);
     }
+}
+
+function getDefaultTotalTimeForMode(mode) {
+    return mode === "local" ? "7" : "45";
 }
 
 function appendDebugLog(...args) {
@@ -372,10 +395,13 @@ function debugLog(...args) {
     }
 }
 
-function buildOverlayUrlFromForm() {
+function buildOverlayUrlFromForm(modeOverride = null) {
+    const selectedMode = document.getElementById("generator-mode")?.value || "chat";
+    const mode = modeOverride || selectedMode;
     const channel = document.getElementById("generator-channel")?.value.trim() || "";
     const clues = document.getElementById("generator-clues")?.value.trim() || "6";
-    const totalTime = document.getElementById("generator-totaltime")?.value.trim() || "45";
+    const totalTimeField = document.getElementById("generator-totaltime");
+    const rawTotalTime = totalTimeField?.value.trim() || "";
     const interval = document.getElementById("generator-interval")?.value.trim() || "5";
     const reveal = document.getElementById("generator-reveal")?.value.trim() || "";
     const sync = document.getElementById("generator-sync")?.value.trim() || "0";
@@ -383,10 +409,22 @@ function buildOverlayUrlFromForm() {
     const mods = document.getElementById("generator-mods")?.value.trim() || "";
     const debug = document.getElementById("generator-debug")?.checked;
     const leaderboardMode = document.getElementById("generator-leaderboard")?.value || "off";
+    const totalTime = rawTotalTime
+        ? modeOverride && selectedMode !== modeOverride && rawTotalTime === getDefaultTotalTimeForMode(selectedMode)
+            ? getDefaultTotalTimeForMode(mode)
+            : rawTotalTime
+        : getDefaultTotalTimeForMode(mode);
 
     const url = new URL("https://jonjonbinx1.github.io/PokesOnStream/");
 
-    if (channel) url.searchParams.set("channel", channel);
+    if (mode === "local") {
+        url.searchParams.set("mode", "local");
+    }
+
+    if (channel) {
+        url.searchParams.set("channel", channel);
+    }
+
     url.searchParams.set("clues", clues);
     url.searchParams.set("totaltime", totalTime);
     url.searchParams.set("interval", interval);
@@ -407,25 +445,34 @@ function buildOverlayUrlFromForm() {
 
     url.searchParams.set("leaderboard", leaderboardMode);
 
-    return { url, channel };
+    return { url, channel, mode };
 }
 
 function updateGeneratedUrl() {
     const output = document.getElementById("generated-url");
     const openLink = document.getElementById("open-generated-url");
+    const localLink = document.getElementById("play-local-url");
     const status = document.getElementById("generator-status");
 
-    if (!output || !openLink || !status) return;
+    if (!output || !openLink || !localLink || !status) return;
 
-    const { url, channel } = buildOverlayUrlFromForm();
+    const { url, channel, mode } = buildOverlayUrlFromForm();
+    const { url: localModeUrl } = buildOverlayUrlFromForm("local");
     const generatedUrl = url.toString();
 
     output.value = generatedUrl;
     openLink.href = generatedUrl;
+    localLink.href = localModeUrl.toString();
+    openLink.textContent = mode === "local" ? "Open Local URL" : "Open URL";
+
+    if (mode === "local") {
+        status.textContent = "Local URL ready to open side-by-side or copy into a browser source.";
+        return;
+    }
 
     status.textContent = channel
         ? "URL ready to copy into OBS or a browser source."
-        : "Add a channel name to create a usable overlay URL.";
+        : "Add a channel name to create a usable overlay URL, or use Play Local.";
 }
 
 async function copyGeneratedUrl() {
@@ -459,6 +506,22 @@ function setupHelpPageGenerator() {
             ? "change"
             : "input";
         field.addEventListener(eventName, updateGeneratedUrl);
+    });
+
+    const modeField = document.getElementById("generator-mode");
+    const totalTimeField = document.getElementById("generator-totaltime");
+
+    modeField?.addEventListener("change", () => {
+        if (!totalTimeField) return;
+
+        const previousDefault = modeField.value === "local" ? "45" : "7";
+        const nextDefault = modeField.value === "local" ? "7" : "45";
+
+        if (!totalTimeField.value || totalTimeField.value === previousDefault) {
+            totalTimeField.value = nextDefault;
+        }
+
+        updateGeneratedUrl();
     });
 
     document.getElementById("copy-generated-url")?.addEventListener("click", copyGeneratedUrl);
@@ -511,7 +574,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     debugLog("Debug mode enabled");
     debugLog("Params", params);
 
-    if (!params.channel) {
+    if (!params.channel && !params.isLocal) {
         document.getElementById("help").classList.remove("hidden");
         return;
     }
@@ -522,7 +585,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.addEventListener("resize", fitGameToViewport);
 
     startRound(params);
-    startChatClient(params.channel);
+    if (!params.isLocal && params.channel) {
+        startChatClient(params.channel);
+    }
 });
 
 async function loadPokemonFromAPI(id) {
@@ -603,7 +668,7 @@ async function startRound(params) {
     gameState.roundFinished = false;
     gameState.winnerName = "";
 
-    setStatus(`Sync time: ${Math.max(0, params.sync)}s`);
+    setStatus(params.isLocal ? "Local round starting" : `Sync time: ${Math.max(0, params.sync)}s`);
     hideRoundOutcome();
 
     const cluesEl = document.getElementById("clues");
@@ -632,7 +697,9 @@ async function startRound(params) {
     const maxClues = Math.min(params.clues, clueFns.length);
     const revealWindow = Number.isFinite(params.reveal)
         ? params.reveal
-        : Math.max(1, Math.floor(params.totalTime / 2));
+        : params.isLocal
+            ? Math.max(1, params.totalTime)
+            : Math.max(1, Math.floor(params.totalTime / 2));
 
     let clueIndex = 0;
     let elapsed = 0;
@@ -670,9 +737,13 @@ async function startRound(params) {
         gifCtx.drawImage(drawBuffer, 0, 0, drawBuffer.width, drawBuffer.height, offsetX, offsetY, drawWidth, drawHeight);
     };
 
-    // First clue immediately
-    clueFns[0]();
-    clueIndex = 1;
+    if (params.isLocal) {
+        clueFns.slice(0, maxClues).forEach(fn => fn());
+        clueIndex = maxClues;
+    } else {
+        clueFns[0]();
+        clueIndex = 1;
+    }
 
     // TIMER INTERVAL (every second)
     const timerTick = setInterval(() => {
@@ -697,8 +768,11 @@ async function startRound(params) {
     }, 1000);
 
     // RESOLUTION-BASED REVEAL
-    const totalStages = 14;
-    let revealStarted = false;
+    let revealStarted = Boolean(params.isLocal);
+
+    if (revealStarted) {
+        gifEl.style.visibility = "visible";
+    }
 
     const updateReveal = () => {
         if (roundId !== gameState.roundId) {
@@ -729,24 +803,30 @@ async function startRound(params) {
     const revealInterval = setInterval(updateReveal, 100);
     updateReveal();
 
-    // CLUE INTERVAL
-    const clueInterval = setInterval(() => {
-        if (roundId !== gameState.roundId) {
-            clearInterval(clueInterval);
-            return;
-        }
+    let clueInterval = null;
 
-        if (clueIndex < maxClues) {
-            clueFns[clueIndex]();
-            clueIndex++;
-        }
+    if (!params.isLocal) {
+        clueInterval = setInterval(() => {
+            if (roundId !== gameState.roundId) {
+                clearInterval(clueInterval);
+                return;
+            }
 
-        if (elapsed >= params.totalTime) {
-            clearInterval(clueInterval);
-        }
-    }, params.interval * 1000);
+            if (clueIndex < maxClues) {
+                clueFns[clueIndex]();
+                clueIndex++;
+            }
 
-    gameState.timerIds.push(timerTick, revealInterval, clueInterval);
+            if (elapsed >= params.totalTime) {
+                clearInterval(clueInterval);
+            }
+        }, params.interval * 1000);
+    }
+
+    gameState.timerIds.push(timerTick, revealInterval);
+    if (clueInterval) {
+        gameState.timerIds.push(clueInterval);
+    }
     requestAnimationFrame(fitGameToViewport);
 }
 

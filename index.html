@@ -18,6 +18,14 @@
         <p class="generator-note">Base URL: <code id="generator-base-url">https://jonjonbinx1.github.io/PokesOnStream/</code></p>
         <div class="generator-grid">
           <label class="generator-field">
+            <span>Mode</span>
+            <select id="generator-mode" name="mode">
+              <option value="chat">Twitch chat overlay</option>
+              <option value="local">Local side-by-side</option>
+            </select>
+          </label>
+
+          <label class="generator-field">
             <span>Channel <strong>*</strong></span>
             <input id="generator-channel" name="channel" type="text" placeholder="yourtwitchchannel" autocomplete="off" />
           </label>
@@ -72,7 +80,7 @@
           </label>
         </div>
 
-        <p class="generator-note">Use Twitch usernames for <code>mods</code>, separated by commas. Leave reveal blank to keep the automatic half-round reveal timing.</p>
+        <p class="generator-note">Use Twitch usernames for <code>mods</code>, separated by commas. Leave reveal blank to keep the automatic half-round reveal timing. Local mode shows all clues and starts the reveal right away, with a default 7 second round unless you override it.</p>
 
         <label class="generator-field generator-output">
           <span>Generated URL</span>
@@ -82,6 +90,7 @@
         <div class="generator-actions">
           <button id="copy-generated-url" type="button">Copy URL</button>
           <a id="open-generated-url" href="#" target="_blank" rel="noopener noreferrer">Open URL</a>
+          <a id="play-local-url" href="#">Play Local</a>
         </div>
 
         <p id="generator-status" class="generator-status" aria-live="polite"></p>
@@ -91,6 +100,7 @@
     <section class="help-section">
       <h2>URL options</h2>
       <ul class="help-list">
+        <li><code>?mode=local</code> – runs a side-by-side local round with all clues visible immediately and the image reveal starting right away. Default round time in local mode: <strong>7</strong> seconds.</li>
         <li><code>?channel=YourTwitchName</code> – required. Connects the overlay to that Twitch channel's chat.</li>
         <li><code>&clues=6</code> – total number of clue panels shown each round. Default: <strong>6</strong>.</li>
         <li><code>&totaltime=45</code> – full round length in seconds. Default: <strong>45</strong>.</li>
@@ -115,6 +125,16 @@
         <li><code>nextpoke</code> starts the next round immediately.</li>
         <li><code>resetleaderboard</code> clears the session leaderboard.</li>
         <li>Only the streamer in <code>channel</code> and usernames listed in <code>mods</code> can use <code>nextpoke</code> and <code>resetleaderboard</code>.</li>
+      </ul>
+    </section>
+
+    <section class="help-section">
+      <h2>Local mode</h2>
+      <ul class="help-list">
+        <li>Use <code>mode=local</code> when players are in the room and do not need Twitch chat.</li>
+        <li>Local rounds show every clue immediately and reveal the Pokémon artwork from the first frame.</li>
+        <li>If nobody answers in time, the result screen says <code>It's XYZ</code> with the Pokémon's name.</li>
+        <li>The generator's <code>Play Local</code> button opens the current settings in local mode without requiring a channel.</li>
       </ul>
     </section>
 
